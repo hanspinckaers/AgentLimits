@@ -1,6 +1,6 @@
 // MARK: - AppSharedState.swift
 // Shared application state for menu bar and settings window.
-// Manages WebView pool, view model, and page-ready observation.
+// Manages WebView pool, view model, and Copilot page-ready observation.
 
 import Combine
 import Foundation
@@ -9,7 +9,7 @@ import WidgetKit
 // MARK: - App Shared State
 
 /// Shared state container for the entire application.
-/// Initializes WebView pool, view model, and observes page-ready changes.
+/// Initializes WebView pool, view model, and observes Copilot page-ready changes.
 @MainActor
 final class AppSharedState: ObservableObject {
     static let shared = AppSharedState()
@@ -41,7 +41,7 @@ final class AppSharedState: ObservableObject {
         WidgetCenter.shared.reloadAllTimelines()
     }
 
-    /// Starts background refresh and loads WebViews (called once)
+    /// Starts background refresh and loads the Copilot WebView (called once)
     func startBackgroundRefresh() {
         guard !isStarted else { return }
         isStarted = true
@@ -50,35 +50,31 @@ final class AppSharedState: ObservableObject {
         tokenUsageViewModel.startAutoRefresh()
     }
 
-    /// Preloads WebViews for all providers
+    /// Preloads WebViews for providers that still require browser sessions.
     private func loadWebViews() {
-        for provider in UsageProvider.allCases {
-            webViewPool.getWebViewStore(for: provider).loadIfNeeded()
-        }
+        webViewPool.getWebViewStore(for: .githubCopilot).loadIfNeeded()
     }
 
     /// Sets up Combine subscriptions to observe page-ready state changes
     private func observePageReadyChanges() {
-        for provider in UsageProvider.allCases {
-            let store = webViewPool.getWebViewStore(for: provider)
-            store.$isPageReady
-                .removeDuplicates()
-                .sink { [weak self] isReady in
-                    self?.viewModel.handlePageReadyChange(for: provider, isReady: isReady)
-                }
-                .store(in: &cancellables)
-        }
+        let provider = UsageProvider.githubCopilot
+        let store = webViewPool.getWebViewStore(for: provider)
+        store.$isPageReady
+            .removeDuplicates()
+            .sink { [weak self] isReady in
+                self?.viewModel.handlePageReadyChange(for: provider, isReady: isReady)
+            }
+            .store(in: &cancellables)
     }
 
     /// Observes cookie changes to trigger login-based navigation
     private func observeCookieChanges() {
-        for provider in UsageProvider.allCases {
-            let store = webViewPool.getWebViewStore(for: provider)
-            store.$cookieChangeToken
-                .sink { [weak self] _ in
-                    self?.viewModel.handleCookieChange(for: provider)
-                }
-                .store(in: &cancellables)
-        }
+        let provider = UsageProvider.githubCopilot
+        let store = webViewPool.getWebViewStore(for: provider)
+        store.$cookieChangeToken
+            .sink { [weak self] _ in
+                self?.viewModel.handleCookieChange(for: provider)
+            }
+            .store(in: &cancellables)
     }
 }
