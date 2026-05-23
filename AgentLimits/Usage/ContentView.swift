@@ -386,6 +386,11 @@ private struct NativeAuthStatusView: View {
     @State private var isLoggedIn: Bool = false
     @State private var didTriggerReauth: Bool = false
 
+    private struct LoginSnapshot: Equatable {
+        let accessToken: String?
+        let codexAuthMtime: Date?
+    }
+
     var body: some View {
         VStack(alignment: .leading, spacing: DesignTokens.Spacing.medium) {
             HStack(spacing: DesignTokens.Spacing.small) {
@@ -491,6 +496,7 @@ private struct NativeAuthStatusView: View {
     }
 
     private func triggerReauth() {
+        let loginSnapshot = captureLoginSnapshot()
         let launched: Bool
         switch provider {
         case .chatgptCodex:
@@ -509,7 +515,7 @@ private struct NativeAuthStatusView: View {
             while Date() < deadline {
                 try? await Task.sleep(for: .seconds(5))
                 refreshLoginState()
-                if isLoggedIn {
+                if loginStateChanged(from: loginSnapshot) {
                     didTriggerReauth = false
                     onRefresh()
                     return
@@ -517,6 +523,32 @@ private struct NativeAuthStatusView: View {
             }
             didTriggerReauth = false
         }
+    }
+
+    private func captureLoginSnapshot() -> LoginSnapshot {
+        switch provider {
+        case .chatgptCodex:
+            return LoginSnapshot(
+                accessToken: try? CodexAuthStore.loadAccessToken(),
+                codexAuthMtime: codexAuthModificationDate()
+            )
+        case .claudeCode:
+            return LoginSnapshot(
+                accessToken: try? ClaudeKeychainStore.loadCredentials().payload.claudeAiOauth.accessToken,
+                codexAuthMtime: nil
+            )
+        case .githubCopilot:
+            return LoginSnapshot(accessToken: nil, codexAuthMtime: nil)
+        }
+    }
+
+    private func loginStateChanged(from previous: LoginSnapshot) -> Bool {
+        captureLoginSnapshot() != previous
+    }
+
+    private func codexAuthModificationDate() -> Date? {
+        let attributes = try? FileManager.default.attributesOfItem(atPath: CodexAuthStore.authFileURL.path)
+        return attributes?[.modificationDate] as? Date
     }
 }
 

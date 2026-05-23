@@ -15,7 +15,7 @@ final class UsageWebViewPool: ObservableObject {
 
     init(providers: [UsageProvider] = UsageProvider.allCases) {
         var stores: [UsageProvider: WebViewStore] = [:]
-        for provider in providers {
+        for provider in providers where provider == .githubCopilot {
             stores[provider] = WebViewStore(initialProvider: provider)
         }
         self.webViewStoreByProvider = stores

@@ -7,9 +7,10 @@
 // Code itself will 401 on its next refresh.
 
 import Foundation
+import OSLog
 
 /// Executes the OAuth refresh flow against `platform.claude.com/v1/oauth/token`.
-struct ClaudeOAuthClient {
+actor ClaudeOAuthClient {
     private let http: NativeUsageHTTPClient
 
     init(http: NativeUsageHTTPClient = NativeUsageHTTPClient()) {
@@ -77,8 +78,18 @@ struct ClaudeOAuthClient {
         }
         let raw = try await http.send(request)
         guard (200...299).contains(raw.response.statusCode) else {
-            // 4xx on refresh means the refresh token is dead — user must re-login.
             if raw.response.statusCode == 401 || raw.response.statusCode == 400 {
+                await ClaudeCLIVersionResolver.forceRefresh()
+                if let (latest, _) = try? ClaudeKeychainStore.loadCredentials(),
+                   latest.claudeAiOauth.refreshToken != refreshToken {
+                    Logger.usage.info("ClaudeOAuthClient: detected externally refreshed keychain token after refresh \(raw.response.statusCode)")
+                    return RefreshedTokens(
+                        accessToken: latest.claudeAiOauth.accessToken,
+                        refreshToken: latest.claudeAiOauth.refreshToken,
+                        expiresAtMillis: latest.claudeAiOauth.expiresAt
+                    )
+                }
+                // 4xx on refresh means the refresh token is dead — user must re-login.
                 throw UsageAuthError.claudeAuthExpired
             }
             throw UsageAuthError.httpStatus(code: raw.response.statusCode, body: raw.bodyString)

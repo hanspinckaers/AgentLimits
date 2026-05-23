@@ -20,9 +20,16 @@ struct CLICommandSettingsView: View {
         store: AppGroupDefaults.shared
     ) private var npxCommandPathText: String = ""
 
+    @AppStorage(
+        ClaudeOAuthOverrideKeys.clientID,
+        store: AppGroupDefaults.shared
+    ) private var claudeOAuthClientIDText: String = ""
+
     @State private var resolvedPaths: [CLICommandKind: String] = [:]
     @State private var scriptCopyFeedback: Bool = false
     @State private var widgetTapAction: WidgetTapAction = WidgetTapActionStore.loadAction()
+    @State private var detectedClaudeCLIVersion: String = ClaudeCLIVersionResolver.cachedVersion()
+    @State private var isRefreshingClaudeCLIVersion = false
 
     private var statusLineScriptPath: String? {
         Bundle.main.path(forResource: "agentlimits_statusline_claude", ofType: "sh")
@@ -33,6 +40,11 @@ struct CLICommandSettingsView: View {
             SettingsFormSection(title: "cliPaths.sectionTitle".localized(),
                                 footerText: "cliPaths.note".localized()) {
                 commandPathSection
+            }
+
+            SettingsFormSection(title: "claudeOAuth.title".localized(),
+                                footerText: "claudeOAuth.note".localized()) {
+                claudeOAuthSection
             }
 
             SettingsFormSection(title: "scripts.title".localized(),
@@ -128,6 +140,43 @@ struct CLICommandSettingsView: View {
         }
     }
 
+    private var claudeOAuthSection: some View {
+        VStack(alignment: .leading, spacing: DesignTokens.Spacing.medium) {
+            LabeledContent("claudeOAuth.clientID".localized()) {
+                TextField(
+                    "",
+                    text: $claudeOAuthClientIDText,
+                    prompt: Text(ClaudeOAuthConfig.clientIDDefault)
+                )
+                .textFieldStyle(.roundedBorder)
+                .font(.system(.body, design: .monospaced))
+                .multilineTextAlignment(.leading)
+                .frame(maxWidth: .infinity, alignment: .leading)
+                .accessibilityLabel(Text("claudeOAuth.clientID".localized()))
+            }
+
+            Divider()
+
+            LabeledContent("claudeOAuth.detectedVersion".localized()) {
+                HStack(spacing: DesignTokens.Spacing.small) {
+                    Text(detectedClaudeCLIVersion)
+                        .font(.system(.body, design: .monospaced))
+                        .textSelection(.enabled)
+                    Button {
+                        refreshClaudeCLIVersion()
+                    } label: {
+                        Label(
+                            "claudeOAuth.refreshVersion".localized(),
+                            systemImage: isRefreshingClaudeCLIVersion ? "arrow.clockwise" : "arrow.triangle.2.circlepath"
+                        )
+                    }
+                    .settingsButtonStyle(.secondary)
+                    .disabled(isRefreshingClaudeCLIVersion)
+                }
+            }
+        }
+    }
+
     private var widgetTapActionSection: some View {
         Picker("", selection: $widgetTapAction) {
             ForEach(WidgetTapAction.allCases) { action in
@@ -162,6 +211,18 @@ struct CLICommandSettingsView: View {
     private func refreshAllResolvedPaths() {
         for descriptor in commandPathDescriptors {
             refreshResolvedPath(for: descriptor.kind)
+        }
+        detectedClaudeCLIVersion = ClaudeCLIVersionResolver.cachedVersion()
+    }
+
+    private func refreshClaudeCLIVersion() {
+        isRefreshingClaudeCLIVersion = true
+        Task {
+            await ClaudeCLIVersionResolver.forceRefresh()
+            await MainActor.run {
+                detectedClaudeCLIVersion = ClaudeCLIVersionResolver.cachedVersion()
+                isRefreshingClaudeCLIVersion = false
+            }
         }
     }
 

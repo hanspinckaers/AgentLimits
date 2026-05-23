@@ -94,6 +94,9 @@ struct AgentLimitsApp: App {
 
     init() {
         Self.migrateIdealToPacemakerKeys()
+        Task {
+            await ClaudeCLIVersionResolver.refreshIfNeeded()
+        }
     }
 
     var body: some Scene {

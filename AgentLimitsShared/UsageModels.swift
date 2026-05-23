@@ -41,6 +41,11 @@ enum CLICommandPathKeys {
     static let npx = "cli_path_npx"
 }
 
+/// UserDefaults keys for Claude OAuth compatibility overrides.
+enum ClaudeOAuthOverrideKeys {
+    static let clientID = "claude_oauth_client_id"
+}
+
 /// Normalizes and validates CLI command path overrides.
 enum CLICommandPathValidator {
     /// Returns a trimmed override path, or nil when empty.

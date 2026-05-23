@@ -8,19 +8,25 @@ import Foundation
 
 /// Compile-time constants for the Claude Code OAuth flow.
 ///
-/// `claudeCodeCLIVersion` is exposed as a settable constant so we can bump it
-/// without redeploying — Anthropic gates `/api/oauth/usage` on the
-/// `claude-code/X.Y.Z` User-Agent shape. A wrong version may still 401.
+/// `claudeCodeCLIVersionFallback` is the bundled fallback. The runtime value is
+/// detected from the user's installed Claude Code CLI when possible.
 enum ClaudeOAuthConfig {
     /// Reported in `User-Agent: claude-code/<version>`.
-    /// Bump in lockstep with whatever Anthropic's current Claude Code CLI ships.
-    static let claudeCodeCLIVersion: String = "2.1.121"
+    static let claudeCodeCLIVersionFallback: String = "2.1.121"
 
     /// Required OAuth beta gate header.
     static let oauthBetaHeader: String = "oauth-2025-04-20"
 
     /// Public Claude Code OAuth client_id — hardcoded in the upstream CLI.
-    static let clientID: String = "9d1c250a-e61b-44d9-88ed-5944d1962f5e"
+    static let clientIDDefault: String = "9d1c250a-e61b-44d9-88ed-5944d1962f5e"
+
+    /// Public Claude Code OAuth client_id, optionally overridden for testing.
+    static var clientID: String {
+        let rawValue = AppGroupDefaults.shared?
+            .string(forKey: ClaudeOAuthOverrideKeys.clientID) ?? ""
+        let trimmedValue = rawValue.trimmingCharacters(in: .whitespacesAndNewlines)
+        return trimmedValue.isEmpty ? clientIDDefault : trimmedValue
+    }
 
     /// Usage endpoint (gated on User-Agent + Authorization).
     static let usageEndpoint: URL = {
@@ -41,7 +47,7 @@ enum ClaudeOAuthConfig {
 
     /// Computed User-Agent string.
     static var userAgent: String {
-        "claude-code/\(claudeCodeCLIVersion)"
+        "claude-code/\(ClaudeCLIVersionResolver.cachedVersion())"
     }
 
     /// Keychain service name written by `claude /login`.

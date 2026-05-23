@@ -72,6 +72,20 @@
 "error.readFailed" = "讀取資料失敗";
 "error.decodeFailed" = "解析資料失敗";
 
+"error.codexAuthExpired" = "auth expired — codex login";
+"error.claudeReLogin" = "re-login: claude /login";
+"error.rateLimited" = "rate limited";
+
+/* Native auth panel (Codex/Claude — read credentials from disk/keychain) */
+"nativeAuth.loggedIn" = "%@ — signed in";
+"nativeAuth.notLoggedIn" = "%@ — not signed in";
+"nativeAuth.refresh" = "Refresh now";
+"nativeAuth.runCodexLogin" = "Run codex login";
+"nativeAuth.runClaudeLogin" = "Run claude /login";
+"nativeAuth.explanationCodex" = "Reads ~/.codex/auth.json. The Codex CLI rotates the token automatically; if it expires, run codex login.";
+"nativeAuth.explanationClaude" = "Reads the Claude Code-credentials keychain item written by claude /login. Tokens auto-refresh; if scope is insufficient, run claude /login.";
+"nativeAuth.waitingForLogin" = "Waiting for keychain update…";
+
 /* Relative Time */
 "time.minutesLater" = "%d 分鐘後";
 "time.hoursLater" = "%d 小時後";
@@ -158,6 +172,11 @@
 "cliPaths.note" = "變更將於下次 CLI 執行時生效。";
 "cliPaths.resolvedLabel" = "已解析：";
 "cliPaths.notFound" = "找不到";
+"claudeOAuth.title" = "Claude OAuth";
+"claudeOAuth.clientID" = "Client ID";
+"claudeOAuth.detectedVersion" = "Claude Code CLI Version";
+"claudeOAuth.refreshVersion" = "Refresh";
+"claudeOAuth.note" = "Usually leave the Client ID blank. Override it only if Anthropic changes the public Claude Code OAuth client.";
 
 /* CLI Colors */
 "cliColors.donut" = "甜甜圈圖顏色";

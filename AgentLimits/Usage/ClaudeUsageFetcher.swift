@@ -92,13 +92,14 @@ extension ClaudeUsageResponse {
                 currency: $0.currency
             )
         }
+        let isLimitReached = (extra_usage?.utilization ?? 0) >= 1.0
         return UsageSnapshot(
             provider: .claudeCode,
             fetchedAt: fetchedAt,
             primaryWindow: primary,
             secondaryWindow: secondary,
             planType: planType,
-            limitReached: false,
+            limitReached: isLimitReached,
             extraUsage: extra
         )
     }
@@ -219,6 +220,7 @@ final class ClaudeUsageFetcher {
             // Refresh once + retry. Refresh re-issues with the SAME scope, so
             // 403 (scope insufficient) cannot be helped by refresh and we
             // surface .claudeReLogin instead (handled in the 403 branch below).
+            await ClaudeCLIVersionResolver.forceRefresh()
             let newAccess: String
             do {
                 newAccess = try await oauthClient.refreshAndPersist()

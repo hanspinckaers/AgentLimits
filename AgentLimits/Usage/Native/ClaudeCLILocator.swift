@@ -5,6 +5,7 @@
 // every Homebrew/Bun/nvm install.
 
 import Foundation
+import OSLog
 
 /// Probes well-known CLI install paths for the Claude Code / Codex CLIs.
 enum ClaudeCLILocator {
@@ -49,13 +50,14 @@ enum ClaudeCLILocator {
     }
 
     /// Finds the highest `~/.nvm/versions/node/<version>/bin/<binary>` if any.
-    /// "Highest" is naive lexicographic-descending (works for vMAJOR.MINOR.PATCH).
     private static func highestNvmVersionPath(binaryName: String, home: String) -> String? {
         let nvmDir = "\(home)/.nvm/versions/node"
         guard let entries = try? FileManager.default.contentsOfDirectory(atPath: nvmDir) else {
             return nil
         }
-        let sorted = entries.sorted(by: >)
+        let sorted = entries.sorted { lhs, rhs in
+            compareNodeVersion(lhs, rhs) == .orderedDescending
+        }
         for version in sorted {
             let path = "\(nvmDir)/\(version)/bin/\(binaryName)"
             if FileManager.default.isExecutableFile(atPath: path) {
@@ -71,14 +73,20 @@ enum ClaudeCLILocator {
     /// token appears in the keychain.
     @discardableResult
     static func launchClaudeLogin() -> Bool {
-        guard let claudePath = locateClaudeBinary() else { return false }
+        guard let claudePath = locateClaudeBinary() else {
+            Logger.usage.error("ClaudeCLILocator: claude binary not found in known locations")
+            return false
+        }
         return spawnDetached(executablePath: claudePath, arguments: ["/login"])
     }
 
     /// Detached-spawns the Codex re-auth flow. Returns true on launch.
     @discardableResult
     static func launchCodexLogin() -> Bool {
-        guard let codexPath = locateCodexBinary() else { return false }
+        guard let codexPath = locateCodexBinary() else {
+            Logger.usage.error("ClaudeCLILocator: codex binary not found in known locations")
+            return false
+        }
         return spawnDetached(executablePath: codexPath, arguments: ["login"])
     }
 
@@ -93,7 +101,25 @@ enum ClaudeCLILocator {
             try process.run()
             return true
         } catch {
+            Logger.usage.error("ClaudeCLILocator: spawnDetached failed for \(executablePath): \(error.localizedDescription)")
             return false
         }
+    }
+
+    private static func compareNodeVersion(_ lhs: String, _ rhs: String) -> ComparisonResult {
+        let lhsParts = parseNodeVersion(lhs)
+        let rhsParts = parseNodeVersion(rhs)
+        for index in 0..<max(lhsParts.count, rhsParts.count) {
+            let lhsValue = index < lhsParts.count ? lhsParts[index] : 0
+            let rhsValue = index < rhsParts.count ? rhsParts[index] : 0
+            if lhsValue > rhsValue { return .orderedDescending }
+            if lhsValue < rhsValue { return .orderedAscending }
+        }
+        return lhs.localizedStandardCompare(rhs)
+    }
+
+    private static func parseNodeVersion(_ version: String) -> [Int] {
+        let normalized = version.drop(while: { $0 == "v" })
+        return normalized.split(separator: ".").compactMap { Int($0) }
     }
 }

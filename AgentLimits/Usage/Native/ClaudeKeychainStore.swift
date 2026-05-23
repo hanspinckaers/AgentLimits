@@ -9,6 +9,7 @@
 // re-run `claude /login`.
 
 import Foundation
+import OSLog
 
 /// The decrypted payload stored inside the keychain item.
 /// Wire format is JSON; field names match what Claude Code itself writes.
@@ -30,7 +31,12 @@ enum ClaudeKeychainStore {
     /// In-memory cache of the discovered account name so we don't re-shell on
     /// every refresh. The account name is whatever string the user's
     /// `claude /login` happened to write — it isn't fixed.
-    private static var cachedAccount: String?
+    private static let cachedAccountLock = NSLock()
+    private static var storedCachedAccount: String?
+    private static var cachedAccount: String? {
+        get { cachedAccountLock.withLock { storedCachedAccount } }
+        set { cachedAccountLock.withLock { storedCachedAccount = newValue } }
+    }
 
     /// Loads the current credentials payload, alongside the keychain account
     /// name (needed for write-back).
@@ -65,19 +71,27 @@ enum ClaudeKeychainStore {
         guard let json = String(data: encoded, encoding: .utf8) else {
             throw UsageAuthError.claudeAuthUnavailable(reason: "non-utf8 credentials JSON")
         }
-        let result = runSecurity(arguments: [
+        let arguments = [
             "add-generic-password",
             "-U",
             "-s", ClaudeOAuthConfig.keychainService,
             "-a", account,
             "-w", json
-        ])
+        ]
+        var result = runSecurity(arguments: arguments)
         if result.exitCode != 0 {
+            Logger.usage.error("ClaudeKeychainStore: keychain write failed (\(result.exitCode)); retrying once: \(String(result.stderr.prefix(200)))")
+            Thread.sleep(forTimeInterval: 0.1)
+            result = runSecurity(arguments: arguments)
+        }
+        if result.exitCode != 0 {
+            Logger.usage.error("ClaudeKeychainStore: keychain write failed after retry (\(result.exitCode)): \(String(result.stderr.prefix(200)))")
             throw UsageAuthError.claudeAuthUnavailable(
                 reason: "security add-generic-password failed (\(result.exitCode)): \(result.stderr.prefix(200))"
             )
         }
         cachedAccount = account
+        verifyWrittenCredentials(expectedAccessToken: payload.claudeAiOauth.accessToken)
     }
 
     /// Resolves the keychain account name. Caches the result.
@@ -125,6 +139,17 @@ enum ClaudeKeychainStore {
             throw UsageAuthError.claudeAuthUnavailable(reason: "empty keychain payload")
         }
         return trimmed
+    }
+
+    private static func verifyWrittenCredentials(expectedAccessToken: String) {
+        do {
+            let (latest, _) = try loadCredentials()
+            if latest.claudeAiOauth.accessToken != expectedAccessToken {
+                Logger.usage.warning("ClaudeKeychainStore: keychain write verification read a different access token")
+            }
+        } catch {
+            Logger.usage.warning("ClaudeKeychainStore: keychain write verification failed: \(error.localizedDescription)")
+        }
     }
 
     /// Parses `"acct"<blob>="value"` from the metadata block.

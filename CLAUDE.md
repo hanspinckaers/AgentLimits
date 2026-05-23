@@ -55,7 +55,7 @@ xcodebuild test -scheme AgentLimits -destination 'platform=macOS'
 | `AgentLimits/App/MenuBar/AppUsageColorResolver.swift` | App-side color resolver equivalent to `WidgetUsageColorResolver` in the widget target |
 | `AgentLimits/App/SettingsTabView.swift` | Tab-based settings UI (Usage, ccusage, Wake Up, Notification, Advanced) |
 | `AgentLimits/App/DesignTokens.swift` | Shared design tokens (spacing/corners/window min size) |
-| `AgentLimits/App/CLICommandSettingsView.swift` | Advanced Settings UI (CLI paths + scripts + widget tap action) |
+| `AgentLimits/App/CLICommandSettingsView.swift` | Advanced Settings UI (CLI paths + Claude OAuth override/version detection + scripts + widget tap action) |
 | `AgentLimits/App/LanguageManager.swift` | Language settings management (Japanese/English/System) |
 | `AgentLimits/App/LoginItemManager.swift` | Login item (start at login) management |
 | `AgentLimits/App/AppLogger.swift` | Application-wide logging utility |
@@ -63,6 +63,9 @@ xcodebuild test -scheme AgentLimits -destination 'platform=macOS'
 | `AgentLimits/App/ShellExecutor.swift` | Shell command execution utility |
 | `AgentLimits/Usage/CodexUsageFetcher.swift` | Codex API + JS token extraction |
 | `AgentLimits/Usage/ClaudeUsageFetcher.swift` | Claude API + JS org ID extraction |
+| `AgentLimits/Usage/Native/ClaudeCLIVersionResolver.swift` | Detects and caches installed Claude Code CLI version for OAuth User-Agent compatibility |
+| `AgentLimits/Usage/Native/ClaudeOAuthClient.swift` | Actor-serialized Claude OAuth refresh flow and rotated token persistence |
+| `AgentLimits/Usage/Native/ClaudeKeychainStore.swift` | Claude Code keychain credential read/write with retry and diagnostics |
 | `AgentLimits/Usage/CopilotUsageFetcher.swift` | GitHub Copilot entitlement API + JS cookie-based auth |
 | `AgentLimits/Usage/CopilotBillingFetcher.swift` | GitHub Copilot billing usage_table API + daily aggregation |
 | `AgentLimits/Usage/UsageViewModel.swift` | Usage limits state, auto-refresh, per-provider tracking, threshold check |
@@ -134,7 +137,7 @@ xcodebuild test -scheme AgentLimits -destination 'platform=macOS'
 - Thresholds and pacemaker colors are configurable in Pacemaker settings (warning/danger delta)
 
 #### Usage Monitoring
-- Sign in to each service in the in-app WKWebView (Codex/Claude Code)
+- Codex and Claude Code use native CLI credentials (`~/.codex/auth.json` and `Claude Code-credentials` keychain item); Copilot still signs in through the in-app WKWebView
 - Usage tab places the login WKWebView in a bottom collapsible panel (`chevron up/down`), collapsed by default
 - Expanded login panel opens upward and can be closed via the handle toggle or background tap
 - Auto refresh interval is configurable (1-10 minutes)
@@ -171,9 +174,11 @@ xcodebuild test -scheme AgentLimits -destination 'platform=macOS'
 - Duplicate prevention: notifies only once per reset cycle
 - Usage color settings (donut + status colors) live in Notification settings
 
-#### Advanced Settings (CLI Paths / Scripts / Widget Tap)
+#### Advanced Settings (CLI Paths / Claude OAuth / Scripts / Widget Tap)
 - Full path overrides for `codex`, `claude`, `npx`
 - PATH resolution results shown in UI
+- Claude OAuth client ID can be overridden for compatibility testing; blank uses the bundled public Claude Code client ID
+- Installed Claude Code CLI version is detected and cached for the OAuth User-Agent, with a manual refresh button
 - Bundled status line script path shown with copy action
 - Widget tap action: open website (default) or refresh data
 
@@ -236,6 +241,9 @@ xcodebuild test -scheme AgentLimits -destination 'platform=macOS'
 | `cli_path_codex` | Full path override for codex |
 | `cli_path_claude` | Full path override for claude |
 | `cli_path_npx` | Full path override for npx |
+| `claude_oauth_client_id` | Optional Claude OAuth client ID override (blank uses bundled public Claude Code client ID) |
+| `claude_cli_version_cached` | Cached detected Claude Code CLI version for OAuth User-Agent |
+| `claude_cli_version_fetched_at` | Timestamp for Claude CLI version cache TTL |
 | `usage_color_donut` | Donut ring color (widget) |
 | `usage_color_donut_use_status` | Donut uses usage status colors |
 | `usage_color_green` | Usage normal color |

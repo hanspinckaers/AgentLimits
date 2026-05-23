@@ -136,8 +136,10 @@ Pacemaker shows a time-based usage benchmark to help you stay on track.
 1. Open **Advanced**.
 2. Set full paths for `codex`, `claude`, `npx` if needed (blank = resolve via PATH).
 3. Review PATH resolution results.
-4. Choose widget tap action (open website / refresh data).
-5. Copy the bundled status line script path if needed.
+4. Review the detected Claude Code CLI version or refresh it manually.
+5. Leave the Claude OAuth Client ID blank unless Anthropic changes the public Claude Code OAuth client.
+6. Choose widget tap action (open website / refresh data).
+7. Copy the bundled status line script path if needed.
 
 ## Wake Up (CLI Scheduler)
 - Runs scheduled commands:
@@ -174,6 +176,7 @@ Snapshots are stored in the App Group container:
 - Threshold notifications require permission.
 - CLI execution uses the **user login shell** and prefixes PATH with `/opt/homebrew/bin:/usr/local/bin:$HOME/.local/bin:$PATH`.
 - Full-path overrides in **Advanced** take precedence.
+- Claude OAuth normally uses the bundled public Claude Code client ID; the Advanced override is only for compatibility recovery.
 - Claude Code logins may require multiple attempts.
 - The Claude Code status line script requires `jq`.
 - Settings window minimum height is `620` to keep the bottom login panel visible.
