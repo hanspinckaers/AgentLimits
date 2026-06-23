@@ -12,6 +12,7 @@ final class SettingsWindowController: NSWindowController {
 
     private static let settingsWindowIdentifier = NSUserInterfaceItemIdentifier("settings")
     private let appState = AppSharedState.shared
+    private var windowCloseObservation: NSObjectProtocol?
 
     private init() {
         super.init(window: nil)
@@ -27,12 +28,25 @@ final class SettingsWindowController: NSWindowController {
         prepareSettingsState()
 
         if window == nil {
-            window = makeSettingsWindow()
+            let newWindow = makeSettingsWindow()
+            window = newWindow
+            observeWindowClose(newWindow)
         }
 
         showWindow(nil)
         window?.makeKeyAndOrderFront(nil)
         NSApp.activate(ignoringOtherApps: true)
+    }
+
+    /// ウィンドウクローズ時にメニューバーアイコンの一時復活終了を通知する
+    private func observeWindowClose(_ window: NSWindow) {
+        windowCloseObservation = NotificationCenter.default.addObserver(
+            forName: NSWindow.willCloseNotification,
+            object: window,
+            queue: .main
+        ) { [weak self] _ in
+            self?.appState.onSettingsWindowClosed?()
+        }
     }
 
     private func prepareSettingsState() {

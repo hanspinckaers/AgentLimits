@@ -119,6 +119,10 @@ xcodebuild test -scheme AgentLimits -destination 'platform=macOS'
   - Dashboard visibility is configurable per provider (`menu_bar_dashboard_*_enabled`, default: true)
   - Provider display order is user-configurable via drag-and-drop in Usage settings; persisted as `provider_display_order` (`[String]` rawValue array); managed by `ProviderOrderStore` in `AppUsageModels.swift`
 - Per-provider menu bar icon toggle (Codex/Claude Code/Copilot separately)
+- Hide menu bar icon option (`menu_bar_icon_hidden`): hides the entire `NSStatusItem` via `isVisible = false`
+  - While hidden, relaunching the app (Finder double-click / Spotlight / `open -a`) triggers `applicationShouldHandleReopen`, which temporarily reveals the icon and opens the settings window
+  - When the settings window is closed, the icon hides again (unless the user turned the toggle off while settings were open)
+  - A 2-second guard after `applicationDidFinishLaunching` prevents accidental reveal from LaunchServices reopen events at startup
 - Status colors customizable from Notification settings
 - Menu includes: Display Mode, Language, Wake Up → Run Now, Start app at login, Check for Updates
 
@@ -234,6 +238,7 @@ Monthly-only usage windows:
 | `menu_bar_dashboard_claude_enabled` | Dashboard row visibility for Claude Code (default: true) |
 | `menu_bar_dashboard_copilot_enabled` | Dashboard row visibility for Copilot (default: true) |
 | `provider_display_order` | Provider display order in menu bar icon and dashboard (`[String]` rawValue array; default: allCases order) |
+| `menu_bar_icon_hidden` | Hide entire menu bar icon (default: false); relaunch app to temporarily reveal |
 | `wake_up_schedules` | Wake Up schedules (JSON array) |
 | `threshold_notification_settings` | Threshold settings (JSON array) |
 | `app_language` | Language preference (App Group shared) |
@@ -285,7 +290,8 @@ Monthly-only usage windows:
 - Full-path overrides from Advanced Settings take precedence
 - Menu bar is managed by `MenuBarController` (AppKit `NSStatusItem`), not SwiftUI `MenuBarExtra`; `AgentLimitsApp` only declares a `Window` scene for the settings window
 - `MenuBarController` uses KVO (`addObserver(_:forKeyPath:options:context:)`) for specific UserDefaults keys rather than `UserDefaults.didChangeNotification` (which fires on every write); `observedAppGroupDefaults` is stored as a property so `addObserver` and `removeObserver` always use the same instance; KVO callbacks run `nonisolated` and dispatch to `@MainActor` via `Task`
-- `AppSharedState.openSettingsAction` bridges AppKit menu → SwiftUI `openWindow`; set in `SettingsTabView.onAppear`
+- `AppSharedState.onSettingsWindowClosed` bridges `SettingsWindowController` window-close → `MenuBarController.endTemporaryRevealIfNeeded()`; set in `AppDelegate.applicationDidFinishLaunching`
+- `applicationShouldHandleReopen` in `AppDelegate` handles relaunch-to-reveal when menu bar icon is hidden; a 2-second post-launch guard prevents accidental reveal from LaunchServices startup events
 - Dashboard rows use `NSHostingView<DashboardMenuItemView>` with `fittingSize` + `autoresizingMask: [.width]`; `menuNeedsUpdate` uses `MainActor.assumeIsolated` for synchronous rebuild
 - `UsageLinearBarView` mirrors `UsageDonutView` logic: warning segment clipped to `min(dangerStart, totalEnd)`, pacemaker bar hidden when `calculatePacemakerPercent()` returns nil
 - `AppUsageColorResolver` duplicates `WidgetUsageColorResolver` for the app target (widgets are a separate build target)

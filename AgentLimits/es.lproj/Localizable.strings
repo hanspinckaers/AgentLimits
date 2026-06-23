@@ -52,6 +52,8 @@
 "content.reset" = "Reinicio:";
 "content.popupClose" = "Cerrar";
 "settings.showInMenuBar" = "Mostrar en la barra de menús";
+"settings.hideMenuBarIcon" = "Ocultar icono de la barra de menús";
+"settings.hideMenuBarIcon.hint" = "Mientras esté oculto, vuelva a abrir la app para mostrarlo temporalmente.";
 
 /* Display Mode */
 "displayMode.used" = "Tasa de uso";

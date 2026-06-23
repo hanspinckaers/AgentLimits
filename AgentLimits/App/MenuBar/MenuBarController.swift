@@ -39,6 +39,9 @@ final class MenuBarController: NSObject {
     // ダッシュボード行のホストビュー（再利用して rootView を更新）
     private var dashboardHostViews: [UsageProvider: NSHostingView<DashboardMenuItemView>] = [:]
 
+    /// 再起動（reopen）で一時的にアイコンを復活させている状態
+    private var isTemporarilyRevealed = false
+
     init(appState: AppSharedState) {
         self.appState = appState
         self.statusItem = NSStatusBar.system.statusItem(withLength: NSStatusItem.variableLength)
@@ -46,6 +49,30 @@ final class MenuBarController: NSObject {
         configureButton()
         buildMenu()
         observeChanges()
+        applyIconVisibility()
+    }
+
+    // MARK: - アイコン表示/非表示制御
+
+    /// UserDefaults の `menu_bar_icon_hidden` と一時復活フラグに基づきアイコン表示を制御する
+    private func applyIconVisibility() {
+        let isHidden = UserDefaults.standard.bool(forKey: UserDefaultsKeys.menuBarIconHidden)
+        statusItem.isVisible = !(isHidden && !isTemporarilyRevealed)
+    }
+
+    /// 再起動（reopen）時にアイコンを一時復活させる。非表示設定時のみフラグを立てる。
+    func temporarilyRevealForReopen() {
+        let isHidden = UserDefaults.standard.bool(forKey: UserDefaultsKeys.menuBarIconHidden)
+        guard isHidden else { return }
+        isTemporarilyRevealed = true
+        applyIconVisibility()
+    }
+
+    /// 設定ウィンドウクローズ時に一時復活を終了し、設定に応じてアイコンを再非表示にする
+    func endTemporaryRevealIfNeeded() {
+        guard isTemporarilyRevealed else { return }
+        isTemporarilyRevealed = false
+        applyIconVisibility()
     }
 
     // MARK: - ボタン（メニューバーアイコン）
@@ -137,6 +164,7 @@ final class MenuBarController: NSObject {
             UserDefaultsKeys.menuBarStatusClaudeEnabled,
             UserDefaultsKeys.menuBarStatusCopilotEnabled,
             UserDefaultsKeys.providerDisplayOrder,
+            UserDefaultsKeys.menuBarIconHidden,
         ] {
             UserDefaults.standard.addObserver(self, forKeyPath: key, options: [.new], context: nil)
         }
@@ -190,7 +218,8 @@ final class MenuBarController: NSObject {
         context: UnsafeMutableRawPointer?
     ) {
         // インライン定義: nonisolated コンテキストから @MainActor な型メンバーを参照できないため
-        let allObservedKeys = [
+        let iconVisibilityKey = "menu_bar_icon_hidden"
+        let imageObservedKeys = [
             "usage_display_mode", "menu_bar_status_codex_enabled",
             "menu_bar_status_claude_enabled", "menu_bar_status_copilot_enabled",
             "provider_display_order", "menu_bar_show_pacemaker_value",
@@ -199,7 +228,18 @@ final class MenuBarController: NSObject {
             "pacemaker_warning_delta", "pacemaker_danger_delta",
             "usage_color_threshold_revision",
         ]
-        guard let keyPath, allObservedKeys.contains(keyPath) else {
+        guard let keyPath else {
+            super.observeValue(forKeyPath: keyPath, of: object, change: change, context: context)
+            return
+        }
+        if keyPath == iconVisibilityKey {
+            // アイコン非表示トグルの即時反映
+            Task { @MainActor [weak self] in
+                self?.applyIconVisibility()
+            }
+            return
+        }
+        guard imageObservedKeys.contains(keyPath) else {
             super.observeValue(forKeyPath: keyPath, of: object, change: change, context: context)
             return
         }
@@ -214,7 +254,7 @@ final class MenuBarController: NSObject {
         let standardKeys = [
             "usage_display_mode", "menu_bar_status_codex_enabled",
             "menu_bar_status_claude_enabled", "menu_bar_status_copilot_enabled",
-            "provider_display_order",
+            "provider_display_order", "menu_bar_icon_hidden",
         ]
         for key in standardKeys {
             UserDefaults.standard.removeObserver(self, forKeyPath: key)

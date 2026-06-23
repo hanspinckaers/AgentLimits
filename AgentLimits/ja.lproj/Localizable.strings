@@ -53,6 +53,8 @@
 "content.reset" = "リセット:";
 "content.popupClose" = "閉じる";
 "settings.showInMenuBar" = "メニューバーに表示";
+"settings.hideMenuBarIcon" = "メニューバーアイコンを隠す";
+"settings.hideMenuBarIcon.hint" = "隠している間は、アプリを再起動すると一時的に再表示されます。";
 
 /* Display Mode */
 "displayMode.used" = "使用率";

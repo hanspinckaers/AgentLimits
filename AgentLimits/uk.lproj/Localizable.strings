@@ -52,6 +52,8 @@
 "content.reset" = "Скидання:";
 "content.popupClose" = "Закрити";
 "settings.showInMenuBar" = "Показувати в рядку меню";
+"settings.hideMenuBarIcon" = "Сховати іконку рядка меню";
+"settings.hideMenuBarIcon.hint" = "Поки приховано, перезапустіть програму для тимчасового відображення.";
 
 /* Display Mode */
 "displayMode.used" = "Рівень використання";

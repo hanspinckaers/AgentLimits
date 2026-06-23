@@ -18,6 +18,7 @@ enum UserDefaultsKeys {
     static let menuBarShowPacemakerValue = SharedUserDefaultsKeys.menuBarShowPacemakerValue
     static let pacemakerRingWarningEnabled = SharedUserDefaultsKeys.pacemakerRingWarningEnabled
     static let providerDisplayOrder = "provider_display_order"
+    static let menuBarIconHidden = "menu_bar_icon_hidden"
 }
 
 /// プロバイダ表示順の読み書きを担当する

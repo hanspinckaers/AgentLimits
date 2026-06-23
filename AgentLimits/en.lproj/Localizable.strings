@@ -53,6 +53,8 @@
 "content.reset" = "Reset:";
 "content.popupClose" = "Close";
 "settings.showInMenuBar" = "Show in Menu Bar";
+"settings.hideMenuBarIcon" = "Hide menu bar icon";
+"settings.hideMenuBarIcon.hint" = "While hidden, relaunch the app to temporarily show it again.";
 
 /* Display Mode */
 "displayMode.used" = "Usage rate";
