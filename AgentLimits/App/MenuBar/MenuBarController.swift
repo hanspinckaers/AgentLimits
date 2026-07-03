@@ -83,8 +83,7 @@ final class MenuBarController: NSObject {
         }
         let content = MenuBarLabelContentView(
             orderedSnapshots: orderedSnapshots,
-            displayMode: displayMode,
-            colorScheme: colorScheme
+            displayMode: displayMode
         )
         .environment(\.colorScheme, colorScheme)
 
@@ -143,15 +142,6 @@ final class MenuBarController: NSObject {
         let appGroupDefaults = AppGroupDefaults.shared
         observedAppGroupDefaults = appGroupDefaults
         for key in [
-            SharedUserDefaultsKeys.menuBarShowPacemakerValue,
-            UsageColorKeys.statusGreen,
-            UsageColorKeys.statusOrange,
-            UsageColorKeys.statusRed,
-            UsageColorKeys.pacemakerStatusOrange,
-            UsageColorKeys.pacemakerStatusRed,
-            PacemakerThresholdKeys.warningDelta,
-            PacemakerThresholdKeys.dangerDelta,
-            UsageStatusThresholdStore.revisionKey,
             SharedUserDefaultsKeys.showAbsoluteSpendAmount,
             SharedUserDefaultsKeys.showDailySpendLeft,
         ] {
@@ -194,12 +184,8 @@ final class MenuBarController: NSObject {
         let allObservedKeys = [
             "usage_display_mode", "menu_bar_status_codex_enabled",
             "menu_bar_status_claude_enabled", "menu_bar_status_copilot_enabled",
-            "provider_display_order", "menu_bar_show_pacemaker_value",
-            "usage_color_green", "usage_color_orange", "usage_color_red",
-            "usage_color_pacemaker_status_orange", "usage_color_pacemaker_status_red",
-            "pacemaker_warning_delta", "pacemaker_danger_delta",
-            "usage_color_threshold_revision", "usage_show_absolute_spend_amount",
-            "usage_show_daily_spend_left",
+            "provider_display_order",
+            "usage_show_absolute_spend_amount", "usage_show_daily_spend_left",
         ]
         guard let keyPath, allObservedKeys.contains(keyPath) else {
             super.observeValue(forKeyPath: keyPath, of: object, change: change, context: context)
@@ -223,12 +209,7 @@ final class MenuBarController: NSObject {
         }
         // Remove observers from the same instance used to add them.
         let appGroupKeys = [
-            "menu_bar_show_pacemaker_value",
-            "usage_color_green", "usage_color_orange", "usage_color_red",
-            "usage_color_pacemaker_status_orange", "usage_color_pacemaker_status_red",
-            "pacemaker_warning_delta", "pacemaker_danger_delta",
-            "usage_color_threshold_revision", "usage_show_absolute_spend_amount",
-            "usage_show_daily_spend_left",
+            "usage_show_absolute_spend_amount", "usage_show_daily_spend_left",
         ]
         for key in appGroupKeys {
             observedAppGroupDefaults?.removeObserver(self, forKeyPath: key)

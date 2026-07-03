@@ -3,14 +3,12 @@
 // Rendered by ImageRenderer and assigned to NSStatusItem.button.image.
 
 import SwiftUI
-import AppKit
 
 /// Overall menu bar icon layout with provider statuses arranged horizontally.
 struct MenuBarLabelContentView: View {
     /// Ordered (provider, snapshot?) entries. nil snapshots are hidden.
     let orderedSnapshots: [(provider: UsageProvider, snapshot: UsageSnapshot?)]
     let displayMode: UsageDisplayMode
-    let colorScheme: ColorScheme
 
     var body: some View {
         HStack(spacing: 6) {
@@ -20,12 +18,10 @@ struct MenuBarLabelContentView: View {
             ForEach(orderedSnapshots, id: \.provider.id) { item in
                 if let snapshot = item.snapshot {
                     MenuBarProviderStatusView(
-                        provider: item.provider,
                         primaryWindow: snapshot.primaryWindow,
                         secondaryWindow: snapshot.secondaryWindow,
                         isSingleMonthlyWindow: snapshot.isSingleMonthlyWindow,
-                        displayMode: displayMode,
-                        colorScheme: colorScheme
+                        displayMode: displayMode
                     )
                 }
             }
@@ -35,39 +31,27 @@ struct MenuBarLabelContentView: View {
 
 /// Menu bar status for one provider.
 struct MenuBarProviderStatusView: View {
-    let provider: UsageProvider
     let primaryWindow: UsageWindow?
     let secondaryWindow: UsageWindow?
     let isSingleMonthlyWindow: Bool
     let displayMode: UsageDisplayMode
-    let colorScheme: ColorScheme
 
     var body: some View {
         MenuBarPercentLineView(
-            provider: provider,
             primaryWindow: primaryWindow,
             secondaryWindow: secondaryWindow,
             isSingleMonthlyWindow: isSingleMonthlyWindow,
-            displayMode: displayMode,
-            colorScheme: colorScheme
+            displayMode: displayMode
         )
     }
 }
 
 /// 5h/weekly percentage display row.
 struct MenuBarPercentLineView: View {
-    let provider: UsageProvider
     let primaryWindow: UsageWindow?
     let secondaryWindow: UsageWindow?
     let isSingleMonthlyWindow: Bool
     let displayMode: UsageDisplayMode
-    let colorScheme: ColorScheme
-    @AppStorage(UsageColorKeys.statusGreen, store: AppGroupDefaults.shared)
-    private var statusGreenHex: String = ""
-    @AppStorage(UsageColorKeys.statusOrange, store: AppGroupDefaults.shared)
-    private var statusOrangeHex: String = ""
-    @AppStorage(UsageColorKeys.statusRed, store: AppGroupDefaults.shared)
-    private var statusRedHex: String = ""
     @AppStorage(UserDefaultsKeys.showAbsoluteSpendAmount, store: AppGroupDefaults.shared)
     private var showAbsoluteSpendAmount = false
     @AppStorage(UserDefaultsKeys.showDailySpendLeft, store: AppGroupDefaults.shared)
@@ -75,12 +59,12 @@ struct MenuBarPercentLineView: View {
 
     var body: some View {
         HStack(alignment: .center, spacing: 2) {
-            valueView(primaryWindow, windowKind: .primary)
+            valueView(primaryWindow)
             if !isSingleMonthlyWindow {
                 Text("/")
                     .font(.system(size: 12, weight: .semibold, design: .monospaced))
                     .foregroundStyle(.secondary)
-                valueView(secondaryWindow, windowKind: .secondary)
+                valueView(secondaryWindow)
             }
         }
         .monospacedDigit()
@@ -88,13 +72,8 @@ struct MenuBarPercentLineView: View {
     }
 
     @ViewBuilder
-    private func valueView(_ window: UsageWindow?, windowKind: UsageWindowKind) -> some View {
+    private func valueView(_ window: UsageWindow?) -> some View {
         if let window {
-            let statusColor = resolveStatusColor(window, windowKind: windowKind)
-            let adjustedStatusColor = MenuBarTextColorAdjuster.adjustedColor(
-                statusColor,
-                for: colorScheme
-            )
             let spendParts = menuBarSpendParts(for: window)
             if spendParts.absolute != nil || spendParts.daily != nil {
                 VStack(alignment: .trailing, spacing: -2) {
@@ -109,14 +88,14 @@ struct MenuBarPercentLineView: View {
                             .lineLimit(1)
                     }
                 }
-                .foregroundColor(adjustedStatusColor)
+                .foregroundStyle(.primary)
                 .minimumScaleFactor(0.8)
             } else {
                 Text(menuBarPercentText(for: window))
                     .font(.system(size: 13.5, weight: .semibold, design: .monospaced))
                     .lineLimit(1)
                     .minimumScaleFactor(0.8)
-                    .foregroundColor(adjustedStatusColor)
+                    .foregroundStyle(.primary)
             }
         } else {
             Text(UsagePercentFormatter.formatPercentText(nil))
@@ -146,52 +125,5 @@ struct MenuBarPercentLineView: View {
         text
             .replacingOccurrences(of: "/wd", with: "")
             .replacingOccurrences(of: "/d", with: "")
-    }
-
-    private func resolveStatusColor(_ window: UsageWindow?, windowKind: UsageWindowKind) -> Color {
-        guard let window else { return .secondary }
-        let thresholds = UsageStatusThresholdStore.loadThresholds(for: provider, windowKind: windowKind)
-        let level = UsageStatusLevelResolver.level(
-            for: window.usedPercent,
-            isRemainingMode: false,
-            warningThreshold: thresholds.warningPercent,
-            dangerThreshold: thresholds.dangerPercent
-        )
-        switch level {
-        case .green: return resolveStoredColor(from: statusGreenHex, defaultColor: .green)
-        case .orange: return resolveStoredColor(from: statusOrangeHex, defaultColor: .orange)
-        case .red: return resolveStoredColor(from: statusRedHex, defaultColor: .red)
-        }
-    }
-
-    private func resolveStoredColor(from storedValue: String, defaultColor: Color) -> Color {
-        let trimmed = storedValue.trimmingCharacters(in: .whitespacesAndNewlines)
-        return ColorHexCodec.resolveColor(from: trimmed.isEmpty ? nil : trimmed, defaultColor: defaultColor)
-    }
-}
-
-private enum MenuBarTextColorAdjuster {
-    private static let darkenAmount = 0.3
-    private static let lightenAmount = 0.3
-
-    static func adjustedColor(_ color: Color, for colorScheme: ColorScheme) -> Color {
-        guard let nsColor = NSColor(color).usingColorSpace(.sRGB) else {
-            return color
-        }
-        let target = colorScheme == .light ? 0.0 : 1.0
-        let amount = colorScheme == .light ? darkenAmount : lightenAmount
-
-        return Color(
-            .sRGB,
-            red: blend(nsColor.redComponent, toward: target, amount: amount),
-            green: blend(nsColor.greenComponent, toward: target, amount: amount),
-            blue: blend(nsColor.blueComponent, toward: target, amount: amount),
-            opacity: Double(nsColor.alphaComponent)
-        )
-    }
-
-    private static func blend(_ component: CGFloat, toward target: Double, amount: Double) -> Double {
-        let value = Double(component)
-        return value + ((target - value) * amount)
     }
 }
