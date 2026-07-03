@@ -1,13 +1,13 @@
 // MARK: - MenuBarLabelContent.swift
-// メニューバーアイコンの SwiftUI コンテンツ。
-// ImageRenderer でレンダリングして NSStatusItem.button.image に設定する。
+// SwiftUI content for the menu bar icon.
+// Rendered by ImageRenderer and assigned to NSStatusItem.button.image.
 
 import SwiftUI
 import AppKit
 
-/// メニューバーアイコン全体のレイアウト（プロバイダーステータスを横並びで表示）
+/// Overall menu bar icon layout with provider statuses arranged horizontally.
 struct MenuBarLabelContentView: View {
-    /// 表示順序付きの (プロバイダ, スナップショット?) 配列。nil は非表示。
+    /// Ordered (provider, snapshot?) entries. nil snapshots are hidden.
     let orderedSnapshots: [(provider: UsageProvider, snapshot: UsageSnapshot?)]
     let displayMode: UsageDisplayMode
     let colorScheme: ColorScheme
@@ -33,7 +33,7 @@ struct MenuBarLabelContentView: View {
     }
 }
 
-/// 1プロバイダーのメニューバーステータス。
+/// Menu bar status for one provider.
 struct MenuBarProviderStatusView: View {
     let provider: UsageProvider
     let primaryWindow: UsageWindow?
@@ -54,7 +54,7 @@ struct MenuBarProviderStatusView: View {
     }
 }
 
-/// 5h/週次のパーセント表示行。
+/// 5h/weekly percentage display row.
 struct MenuBarPercentLineView: View {
     let provider: UsageProvider
     let primaryWindow: UsageWindow?

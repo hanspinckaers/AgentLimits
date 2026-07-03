@@ -151,9 +151,9 @@ enum UsageStatusLevel {
 }
 
 extension UsageStatusLevel {
-    /// ペースメーカーモード用の矢印アイコン
-    /// - green (余裕あり): 表示なし
-    /// - orange/red (超過): 上向き矢印
+    /// Arrow icon for pacemaker mode.
+    /// - green (on pace): no display.
+    /// - orange/red (over pace): up arrow.
     var pacemakerArrowIcon: String {
         switch self {
         case .green:
@@ -163,12 +163,12 @@ extension UsageStatusLevel {
         }
     }
 
-    /// ペースメーカーモード用インジケータ色
-    /// - Note: greenの場合は矢印が表示されないため実際には使用されない
+    /// Indicator color for pacemaker mode.
+    /// - Note: unused for green because no arrow is displayed.
     var pacemakerIndicatorColor: Color {
         switch self {
         case .green:
-            return .secondary  // 矢印非表示のため未使用
+            return .secondary  // Unused because the arrow is hidden.
         case .orange:
             return UsageColorSettings.loadPacemakerStatusOrangeColor()
         case .red:
@@ -956,7 +956,7 @@ extension UsageWindow {
         return max(0, limit - (spendAmount ?? 0))
     }
 
-    /// 週次ウィンドウより長い期間かどうかを返します。
+    /// Returns whether this window is longer than the weekly window.
     var isLongerThanWeeklyWindow: Bool {
         limitWindowSeconds > UsageLimitDuration.sevenDays + 1
     }
@@ -1047,7 +1047,7 @@ struct UsageSnapshot: Codable, SnapshotData {
 }
 
 extension UsageSnapshot {
-    /// 月間のみの使用量スナップショットかどうかを返します。
+    /// Returns whether this usage snapshot contains only a monthly window.
     var isSingleMonthlyWindow: Bool {
         if provider == .githubCopilot {
             return secondaryWindow == nil

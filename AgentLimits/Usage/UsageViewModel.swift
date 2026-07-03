@@ -178,7 +178,7 @@ final class UsageViewModel: ObservableObject {
     /// Called when WebView page finishes loading; triggers fetch if logged in
     func handlePageReadyChange(for provider: UsageProvider, isReady: Bool) {
         guard isReady else { return }
-        // Recovery Task が SPA 初期化待機を担うため、recovery 中は page-ready 経由の fetch をスキップ。
+        // During recovery, the recovery task waits for SPA initialization, so skip page-ready fetches.
         guard !autoRecoveryInFlight.contains(provider) else { return }
         // Manual refresh has priority; otherwise honor auto-refresh eligibility.
         let isManualRefresh = consumeManualRefreshRequest(for: provider)
@@ -210,7 +210,7 @@ final class UsageViewModel: ObservableObject {
         // Refresh providers that are enabled or selected.
         let eligibleProviders = stateManager.autoRefreshEligibleProviders(selectedProvider: selectedProvider)
         for provider in eligibleProviders {
-            // Recovery Task が進行中のプロバイダは auto refresh をスキップ。
+            // Skip auto refresh for providers with an active recovery task.
             guard !autoRecoveryInFlight.contains(provider) else { continue }
             await refreshSnapshot(for: provider)
         }
@@ -265,12 +265,12 @@ final class UsageViewModel: ObservableObject {
         } catch {
             if shouldDisableAutoRefresh(for: provider, error: error) {
                 if autoRecoveryInFlight.contains(provider) {
-                    // reload 後の再 fetch でも失敗 → 復旧不能と判定して auto refresh を無効化
+                    // Second fetch after reload failed, so disable auto refresh as unrecoverable.
                     autoRecoveryInFlight.remove(provider)
                     stateManager.setAutoRefreshEnabled(false, for: provider)
                 } else {
-                    // 初回失敗: stale な lastActiveOrg Cookie を削除してからリロードし orgId を再取得する。
-                    // page-ready 直後ではなく SPA が API コールを完了した後に fetch するため delayed Task を使う。
+                    // First failure: delete stale lastActiveOrg cookie, reload, and recover orgId.
+                    // Use a delayed task so fetching happens after the SPA completes its API calls.
                     autoRecoveryInFlight.insert(provider)
                     await clearOrgIdCookie(for: provider)
                     webViewPool.getWebViewStore(for: provider).reloadFromOrigin()
@@ -394,29 +394,29 @@ final class UsageViewModel: ObservableObject {
             || normalized.contains("http 403")
     }
 
-    /// ページ再ロード後、SPA の API コール完了を待ってから fetch を実行する。
-    /// handlePageReadyChange は autoRecoveryInFlight によりスキップされるため、ここで直接呼ぶ。
+    /// After reload, waits for SPA API calls to finish before fetching.
+    /// Calls directly because handlePageReadyChange is skipped while autoRecoveryInFlight is set.
     private func waitForRecoveryFetch(for provider: UsageProvider) async {
         let webViewStore = webViewPool.getWebViewStore(for: provider)
-        // ページロード完了を最大 15 秒待機
+        // Wait up to 15 seconds for page load to finish.
         let deadline = Date().addingTimeInterval(15)
         while !webViewStore.isPageReady && Date() < deadline {
             try? await Task.sleep(for: .milliseconds(500))
         }
         guard webViewStore.isPageReady else {
-            // タイムアウト: recovery フラグを解除して通常の auto refresh に戻す
+            // Timeout: clear the recovery flag and return to normal auto refresh.
             autoRecoveryInFlight.remove(provider)
             return
         }
-        // SPA が初期 API コールを performance.getEntriesByType("resource") に登録するまで待機
+        // Wait until the SPA registers initial API calls in performance.getEntriesByType("resource").
         try? await Task.sleep(for: .seconds(3))
         await handleLoginAndFetch(for: provider)
-        // handleLoginAndFetch → refreshSnapshot が早期リターンした場合 (ページ未準備等) にフラグが残る可能性があるため解除
+        // Clear the flag in case handleLoginAndFetch -> refreshSnapshot returned early.
         autoRecoveryInFlight.remove(provider)
     }
 
-    /// missingOrganization エラー後の自動復旧用。stale な lastActiveOrg Cookie を削除し、
-    /// リロード後の JS が resource / HTML フォールバックで最新 orgId を取得できるようにする。
+    /// Automatic recovery after a missingOrganization error.
+    /// Deletes stale lastActiveOrg cookie so reloaded JS can use resource/HTML fallback for the latest orgId.
     private func clearOrgIdCookie(for provider: UsageProvider) async {
         guard provider == .claudeCode else { return }
         let cookieStore = WKWebsiteDataStore.default().httpCookieStore

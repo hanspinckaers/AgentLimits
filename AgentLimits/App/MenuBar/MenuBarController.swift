@@ -1,8 +1,8 @@
 // MARK: - MenuBarController.swift
-// NSStatusItem と NSMenu を管理するメニューバーコントローラー。
-// AppDelegate から初期化・保持される。
-// - NSStatusItem.button.image: SwiftUI ImageRenderer 出力を Combine で動的更新
-// - NSMenu: ダッシュボード行を NSHostingView で描画、その他は通常の NSMenuItem
+// Menu bar controller that manages NSStatusItem and NSMenu.
+// Created and retained by AppDelegate.
+// - NSStatusItem.button.image: dynamic SwiftUI ImageRenderer output.
+// - NSMenu: dashboard rows use NSHostingView; other entries are standard NSMenuItem values.
 
 import AppKit
 import Combine
@@ -10,8 +10,8 @@ import SwiftUI
 
 // MARK: - MenuBarIconCacheKey
 
-/// メニューバーアイコンの描画入力を表すキャッシュキー。
-/// 前回と同一であれば ImageRenderer の実行をスキップする。
+/// Cache key describing the inputs used to render the menu bar icon.
+/// When unchanged from the previous render, ImageRenderer work is skipped.
 private struct MenuBarIconCacheKey: Equatable {
     struct ProviderEntry: Equatable {
         let provider: UsageProvider
@@ -32,11 +32,11 @@ final class MenuBarController: NSObject {
     private var debounceTask: Task<Void, Never>?
     private static let debounceMs: UInt64 = 300
     private var lastIconCacheKey: MenuBarIconCacheKey?
-    // addObserver と removeObserver で同じインスタンスを使うために保持する
-    // nonisolated(unsafe): deinit（nonisolated）からアクセスするため
+    // Keep the same instance for addObserver/removeObserver.
+    // nonisolated(unsafe): accessed from nonisolated deinit.
     nonisolated(unsafe) private var observedAppGroupDefaults: UserDefaults?
 
-    // ダッシュボード行のホストビュー（再利用して rootView を更新）
+    // Dashboard host views, reused by updating rootView.
     private var dashboardHostViews: [UsageProvider: NSHostingView<DashboardMenuItemView>] = [:]
 
     init(appState: AppSharedState) {
@@ -48,7 +48,7 @@ final class MenuBarController: NSObject {
         observeChanges()
     }
 
-    // MARK: - ボタン（メニューバーアイコン）
+    // MARK: - Button (Menu Bar Icon)
 
     private func configureButton() {
         statusItem.button?.imageScaling = .scaleProportionallyDown
@@ -62,7 +62,7 @@ final class MenuBarController: NSObject {
         let colorScheme = resolveButtonColorScheme()
         let orderedProviders = ProviderOrderStore.loadProviderOrder()
 
-        // 前回の描画入力と同一であれば ImageRenderer をスキップする
+        // Skip ImageRenderer when render inputs have not changed.
         let cacheKey = MenuBarIconCacheKey(
             providers: orderedProviders.map { provider in
                 MenuBarIconCacheKey.ProviderEntry(
@@ -77,7 +77,7 @@ final class MenuBarController: NSObject {
         guard cacheKey != lastIconCacheKey else { return }
         lastIconCacheKey = cacheKey
 
-        // メニューバーボタン自身の見た目を基準に ImageRenderer の色を決める。
+        // Resolve ImageRenderer colors from the menu bar button's current appearance.
         let orderedSnapshots = orderedProviders.map { provider in
             (provider: provider, snapshot: isMenuBarEnabled(provider) ? snapshots[provider] : nil)
         }
@@ -113,7 +113,7 @@ final class MenuBarController: NSObject {
         )
     }
 
-    // MARK: - メニュー構築
+    // MARK: - Menu Construction
 
     private func buildMenu() {
         let menu = NSMenu()
@@ -122,15 +122,14 @@ final class MenuBarController: NSObject {
         statusItem.menu = menu
     }
 
-    // MARK: - 変更監視
+    // MARK: - Change Observation
 
     private func observeChanges() {
         appState.viewModel.objectWillChange
             .sink { [weak self] _ in self?.scheduleImageUpdate() }
             .store(in: &cancellables)
 
-        // UserDefaults.didChangeNotification（全変更）の代わりに
-        // アイコン表示に関係するキーのみを KVO で監視する
+        // Observe only the keys that affect icon rendering instead of all UserDefaults changes.
         for key in [
             UserDefaultsKeys.displayMode,
             UserDefaultsKeys.menuBarStatusCodexEnabled,
@@ -140,7 +139,7 @@ final class MenuBarController: NSObject {
         ] {
             UserDefaults.standard.addObserver(self, forKeyPath: key, options: [.new], context: nil)
         }
-        // addObserver と removeObserver で同じインスタンスを保持する
+        // Retain the same instance used by addObserver/removeObserver.
         let appGroupDefaults = AppGroupDefaults.shared
         observedAppGroupDefaults = appGroupDefaults
         for key in [
@@ -184,14 +183,14 @@ final class MenuBarController: NSObject {
         }
     }
 
-    // KVO コールバック（特定キーの変更時のみ呼ばれる）
+    // KVO callback for the specific observed keys.
     nonisolated override func observeValue(
         forKeyPath keyPath: String?,
         of object: Any?,
         change: [NSKeyValueChangeKey: Any]?,
         context: UnsafeMutableRawPointer?
     ) {
-        // インライン定義: nonisolated コンテキストから @MainActor な型メンバーを参照できないため
+        // Inline list because this nonisolated context cannot access @MainActor type members.
         let allObservedKeys = [
             "usage_display_mode", "menu_bar_status_codex_enabled",
             "menu_bar_status_claude_enabled", "menu_bar_status_copilot_enabled",
@@ -206,7 +205,7 @@ final class MenuBarController: NSObject {
             super.observeValue(forKeyPath: keyPath, of: object, change: change, context: context)
             return
         }
-        // 設定変更はキャッシュを無効化して強制再描画する
+        // Invalidate the cache and force redraw for settings changes.
         Task { @MainActor [weak self] in
             self?.lastIconCacheKey = nil
             self?.scheduleImageUpdate()
@@ -222,7 +221,7 @@ final class MenuBarController: NSObject {
         for key in standardKeys {
             UserDefaults.standard.removeObserver(self, forKeyPath: key)
         }
-        // addObserver と同じインスタンスで解除する
+        // Remove observers from the same instance used to add them.
         let appGroupKeys = [
             "menu_bar_show_pacemaker_value",
             "usage_color_green", "usage_color_orange", "usage_color_red",
@@ -268,7 +267,7 @@ final class MenuBarController: NSObject {
 
 extension MenuBarController: NSMenuDelegate {
     nonisolated func menuNeedsUpdate(_ menu: NSMenu) {
-        // NSMenuDelegate はメインスレッドから呼ばれるため assumeIsolated で同期実行
+        // NSMenuDelegate is called on the main thread, so run synchronously via assumeIsolated.
         MainActor.assumeIsolated {
             self.rebuildMenu(menu)
         }
@@ -278,7 +277,7 @@ extension MenuBarController: NSMenuDelegate {
     private func rebuildMenu(_ menu: NSMenu) {
         menu.removeAllItems()
 
-        // ダッシュボード行
+        // Dashboard rows.
         let displayMode = loadDisplayMode()
         let snapshots = appState.viewModel.snapshots
         let visibleProviders = ProviderOrderStore.loadProviderOrder().filter {
@@ -288,7 +287,7 @@ extension MenuBarController: NSMenuDelegate {
             guard let snapshot = snapshots[provider] else { continue }
             let item = makeDashboardItem(provider: provider, snapshot: snapshot, displayMode: displayMode)
             menu.addItem(item)
-            // プロバイダー間にセパレーター（最後は除く）
+            // Separator between providers, except after the last row.
             if index < visibleProviders.count - 1 {
                 menu.addItem(.separator())
             }
@@ -297,7 +296,7 @@ extension MenuBarController: NSMenuDelegate {
             menu.addItem(.separator())
         }
 
-        // 設定を開く
+        // Open settings.
         menu.addItem(makeActionItem(
             title: "menu.openSettings".localized(),
             image: NSImage(systemSymbolName: "gear", accessibilityDescription: nil),
@@ -305,15 +304,15 @@ extension MenuBarController: NSMenuDelegate {
         ))
         menu.addItem(.separator())
 
-        // 表示モードサブメニュー
+        // Display mode submenu.
         menu.addItem(makeDisplayModeItem())
-        // 言語サブメニュー
+        // Language submenu.
         menu.addItem(makeLanguageItem())
-        // Wake up サブメニュー
+        // Wake Up submenu.
         menu.addItem(makeWakeUpItem())
         menu.addItem(.separator())
 
-        // ログイン時に起動
+        // Start at login.
         let loginItem = makeActionItem(
             title: "wakeUp.startAtLogin".localized(),
             image: NSImage(systemSymbolName: "arrow.up.circle", accessibilityDescription: nil),
@@ -323,7 +322,7 @@ extension MenuBarController: NSMenuDelegate {
         menu.addItem(loginItem)
         menu.addItem(.separator())
 
-        // アップデート確認
+        // Check for updates.
         let updateItem = makeActionItem(
             title: "menu.checkForUpdates".localized(),
             image: NSImage(systemSymbolName: "arrow.down.circle", accessibilityDescription: nil),
@@ -341,7 +340,7 @@ extension MenuBarController: NSMenuDelegate {
         ))
         menu.addItem(.separator())
 
-        // 終了
+        // Quit.
         menu.addItem(makeActionItem(
             title: "menu.quit".localized(),
             image: NSImage(systemSymbolName: "power", accessibilityDescription: nil),
@@ -349,7 +348,7 @@ extension MenuBarController: NSMenuDelegate {
         ))
     }
 
-    // MARK: - ダッシュボード行
+    // MARK: - Dashboard Rows
 
     private func makeDashboardItem(
         provider: UsageProvider,
@@ -362,10 +361,10 @@ extension MenuBarController: NSMenuDelegate {
             displayMode: displayMode
         )
         let hosting = NSHostingView(rootView: view)
-        // NSMenu の NSVisualEffectView 背景との合成を正確にするため透明に設定
+        // Keep transparent so it composites correctly with NSMenu's NSVisualEffectView background.
         hosting.wantsLayer = true
         hosting.layer?.backgroundColor = .clear
-        // fittingSize で自然な高さを取得しつつ、幅は最小 300px を確保してメニューが狭くならないようにする
+        // Use the natural height while enforcing a 300px minimum width so the menu is not too narrow.
         let fittingSize = hosting.fittingSize
         hosting.frame = NSRect(x: 0, y: 0, width: max(300, fittingSize.width), height: fittingSize.height)
         hosting.autoresizingMask = [.width]
@@ -376,7 +375,7 @@ extension MenuBarController: NSMenuDelegate {
         return item
     }
 
-    // MARK: - ヘルパー
+    // MARK: - Helpers
 
     private func makeActionItem(title: String, image: NSImage?, action: Selector) -> NSMenuItem {
         let item = NSMenuItem(title: title, action: action, keyEquivalent: "")
@@ -398,7 +397,7 @@ extension MenuBarController: NSMenuDelegate {
         }
     }
 
-    // MARK: - サブメニュー: 表示モード
+    // MARK: - Submenu: Display Mode
 
     private func makeDisplayModeItem() -> NSMenuItem {
         let current = loadDisplayMode()
@@ -420,7 +419,7 @@ extension MenuBarController: NSMenuDelegate {
         return parent
     }
 
-    // MARK: - サブメニュー: 言語
+    // MARK: - Submenu: Language
 
     private func makeLanguageItem() -> NSMenuItem {
         let languages = LanguageManager.shared.availableLanguages
@@ -444,7 +443,7 @@ extension MenuBarController: NSMenuDelegate {
     }
 
 
-    // MARK: - サブメニュー: Wake up
+    // MARK: - Submenu: Wake Up
 
     private func makeWakeUpItem() -> NSMenuItem {
         let sub = NSMenu()

@@ -377,7 +377,7 @@ private struct UsageDonutView: View {
         PacemakerRingWarningSettings.isWarningEnabled()
     }
 
-    /// 内側ペースメーカーリングの等分数（5h=5、1w=7、月間=週数）
+    /// Number of inner pacemaker ring divisions: 5h=5, 1w=7, monthly=week count.
     private var divisionCount: Int {
         window?.pacemakerDivisionCount ?? (windowKind == .primary ? 5 : 7)
     }
@@ -386,7 +386,7 @@ private struct UsageDonutView: View {
         guard isPacemakerRingWarningEnabled else { return nil }
         guard displayMode != .remaining else { return nil }
         guard let window, let usedPercent else { return nil }
-        // 使用率閾値で色が変わっている場合（orange/red）、セグメント描画をスキップ
+        // Skip segmented rendering when threshold coloring already marks usage orange/red.
         if let level = WidgetUsageColorResolver.donutRingLevel(
             usedPercent: window.usedPercent,
             provider: provider,
@@ -427,7 +427,7 @@ private struct UsageDonutView: View {
             }
             if let pacemakerProgress {
                 let gaps = RingDivisionParams.gapRanges(count: divisionCount)
-                // 背景トラック: 等分ギャップを除いたセグメントで描画
+                // Background track: draw segments excluding equal division gaps.
                 ForEach(Array(trackSegmentRanges(gaps).enumerated()), id: \.offset) { _, seg in
                     Circle()
                         .trim(from: seg.start, to: seg.end)
@@ -436,7 +436,7 @@ private struct UsageDonutView: View {
                         .foregroundStyle(.quaternary.opacity(0.5))
                         .padding(outerLineWidth)
                 }
-                // 塗りリング: ギャップを考慮して分割描画
+                // Fill ring: draw split segments while accounting for gaps.
                 ForEach(Array(clipToGaps(from: 0, to: pacemakerProgress, gaps: gaps).enumerated()), id: \.offset) { _, seg in
                     Circle()
                         .trim(from: seg.start, to: seg.end)
@@ -479,7 +479,7 @@ private struct UsageDonutView: View {
         min(max(value, 0), 1)
     }
 
-    /// 全周 (0...1) からギャップを除いた可視セグメント一覧を返す
+    /// Returns visible segments from the full circumference (0...1), excluding gaps.
     private func trackSegmentRanges(_ gaps: [(start: Double, end: Double)]) -> [(start: Double, end: Double)] {
         var result: [(start: Double, end: Double)] = []
         var cursor: Double = 0
@@ -495,7 +495,7 @@ private struct UsageDonutView: View {
         return result
     }
 
-    /// (start, end) 範囲をギャップで分割し、可視サブセグメントを返す
+    /// Splits a (start, end) range by gaps and returns visible subsegments.
     private func clipToGaps(from start: Double, to end: Double, gaps: [(start: Double, end: Double)]) -> [(start: Double, end: Double)] {
         guard !gaps.isEmpty, end > start else {
             return [(start: start, end: end)]
@@ -537,10 +537,10 @@ private struct PacemakerRingSegments {
 }
 
 private struct RingDivisionParams {
-    /// 1つのギャップが占める割合（全周=1.0）
+    /// Fraction occupied by one gap when the full circumference equals 1.0.
     static let gapFraction: Double = 0.015
 
-    /// N等分のギャップ範囲を返す。区切りは (N-1) 個。
+    /// Returns gap ranges for N equal divisions. There are N-1 separators.
     static func gapRanges(count: Int) -> [(start: Double, end: Double)] {
         guard count > 1 else { return [] }
         let segmentSize = 1.0 / Double(count)

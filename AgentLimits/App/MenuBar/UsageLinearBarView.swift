@@ -1,46 +1,46 @@
 // MARK: - UsageLinearBarView.swift
-// メニューバー ダッシュボード用の線形プログレスバー（ドーナツリングの線形版）。
-// 上段: 使用率バー（ペースメーカー超過時はセグメント色分け）
-// 下段: ペースメーカーバー（5h=5分割、週次=7分割、月次=分割なし、ギャップ付き）
+// Linear progress bar for the menu bar dashboard, matching the widget donut ring behavior.
+// Top row: usage bar, segmented when usage exceeds the pacemaker.
+// Bottom row: pacemaker bar, split into 5h/weekly/monthly segments with gaps.
 
 import SwiftUI
 
-/// 1ウィンドウ分の使用率/ペースメーカーを線形バーで描画する。
+/// Draws usage and pacemaker progress for one usage window.
 struct UsageLinearBarView: View {
     let provider: UsageProvider
     let windowKind: UsageWindowKind
     let window: UsageWindow?
     let displayMode: UsageDisplayMode
 
-    /// 使用率バーの高さ（ドーナツの outerLineWidth = 8 に相当）
+    /// Usage bar height, corresponding to the widget outer ring width.
     private let usageBarHeight: CGFloat = 7
-    /// ペースメーカーバーの高さ（ドーナツの innerLineWidth = 4 に相当）
+    /// Pacemaker bar height, corresponding to the widget inner ring width.
     private let pacemakerBarHeight: CGFloat = 4
-    /// バー間の縦スペース
+    /// Vertical gap between bars.
     private let verticalSpacing: CGFloat = 2
-    /// バーの角丸
+    /// Bar corner radius.
     private let cornerRadius: CGFloat = 2
 
     var body: some View {
         VStack(alignment: .leading, spacing: verticalSpacing) {
             usageBar
-            // ウィジェット同様、表示モード適用後のペースメーカー進捗が取得できる場合のみ表示
+            // Match widgets: show pacemaker only when display-mode adjusted progress exists.
             if displayPacemakerPercent != nil {
                 pacemakerBar
             }
         }
     }
 
-    // MARK: - 上段: 使用率バー
+    // MARK: - Top Row: Usage Bar
 
     private var usageBar: some View {
         GeometryReader { geo in
             ZStack(alignment: .leading) {
-                // 背景トラック
+                // Background track.
                 RoundedRectangle(cornerRadius: cornerRadius)
                     .fill(Color.secondary.opacity(0.25))
 
-                // 使用済み部分
+                // Used portion.
                 if let segments = pacemakerSegments {
                     segmentedFillView(segments: segments, totalWidth: geo.size.width)
                 } else {
@@ -53,19 +53,19 @@ struct UsageLinearBarView: View {
         .frame(height: usageBarHeight)
     }
 
-    /// ペースメーカー超過時のセグメント分け塗り
+    /// Segmented fill used when usage exceeds the pacemaker.
     @ViewBuilder
     private func segmentedFillView(segments: PacemakerLinearSegments, totalWidth: CGFloat) -> some View {
         ZStack(alignment: .leading) {
-            // ZStack の幅を totalWidth に固定しないと offset した矩形が clipShape でクリップされる
+            // Keep ZStack width fixed so offset rectangles are clipped correctly.
             Color.clear.frame(width: totalWidth, height: usageBarHeight)
-            // normal: 0..normalEnd（メインカラー）
+            // normal: 0..normalEnd, using the main color.
             if segments.normalEnd > 0 {
                 Rectangle()
                     .fill(barColor)
                     .frame(width: totalWidth * segments.normalEnd, height: usageBarHeight)
             }
-            // warning: warningStart..min(dangerStart, totalEnd)（ウィジェット同様に totalEnd でクリップ）
+            // warning: warningStart..min(dangerStart, totalEnd), clipped like the widget.
             let warningEnd = min(segments.dangerStart, segments.totalEnd)
             if warningEnd > segments.warningStart {
                 Rectangle()
@@ -73,7 +73,7 @@ struct UsageLinearBarView: View {
                     .frame(width: totalWidth * (warningEnd - segments.warningStart), height: usageBarHeight)
                     .offset(x: totalWidth * segments.warningStart)
             }
-            // danger: dangerStart..totalEnd（赤）
+            // danger: dangerStart..totalEnd.
             if segments.totalEnd > segments.dangerStart {
                 Rectangle()
                     .fill(pacemakerDangerColor)
@@ -85,7 +85,7 @@ struct UsageLinearBarView: View {
         .clipShape(RoundedRectangle(cornerRadius: cornerRadius))
     }
 
-    // MARK: - 下段: ペースメーカーバー
+    // MARK: - Bottom Row: Pacemaker Bar
 
     private var pacemakerBar: some View {
         GeometryReader { geo in
@@ -103,7 +103,7 @@ struct UsageLinearBarView: View {
         .frame(height: pacemakerBarHeight)
     }
 
-    /// 1セグメントぶんのペースメーカーバー（背景＋進捗塗り）
+    /// One pacemaker segment with background and progress fill.
     private func pacemakerSegmentView(index: Int, width: CGFloat) -> some View {
         let count = divisionCount
         let segStart = Double(index) / Double(count)
@@ -130,11 +130,11 @@ struct UsageLinearBarView: View {
         .frame(width: width, height: pacemakerBarHeight)
     }
 
-    // MARK: - 進捗値
+    // MARK: - Progress Values
 
     private var usageProgress: Double {
         guard let window else { return 0 }
-        // ウィジェット同様、displayMode 適用後の値を使う（残りモードでバーとテキストを一致させる）
+        // Match widgets: use display-mode adjusted value so bars and text agree.
         return clamp(displayMode.displayPercent(from: window.usedPercent, window: window) / 100)
     }
 
@@ -151,12 +151,12 @@ struct UsageLinearBarView: View {
         window?.pacemakerDivisionCount ?? (windowKind == .primary ? 5 : 7)
     }
 
-    /// ペースメーカー超過時のセグメント情報。超過していない場合は nil。
+    /// Segmentation data when usage exceeds the pacemaker, otherwise nil.
     private var pacemakerSegments: PacemakerLinearSegments? {
         guard PacemakerRingWarningSettings.isWarningEnabled() else { return nil }
         guard displayMode != .remaining else { return nil }
         guard let window else { return nil }
-        // 使用率閾値で色が変わっているとき（orange/red）はセグメント分け表示しない
+        // Do not segment when threshold coloring already marks the bar orange/red.
         if let level = AppUsageColorResolver.barLevel(
             usedPercent: window.usedPercent,
             provider: provider,
@@ -181,7 +181,7 @@ struct UsageLinearBarView: View {
         )
     }
 
-    // MARK: - 色
+    // MARK: - Colors
 
     private var barColor: Color {
         AppUsageColorResolver.barColor(
@@ -208,7 +208,7 @@ struct UsageLinearBarView: View {
     }
 }
 
-/// 使用率バーをペースメーカー超過時に色分けするためのセグメント情報。
+/// Segment information for coloring the usage bar when it exceeds the pacemaker.
 private struct PacemakerLinearSegments {
     let normalEnd: Double
     let warningStart: Double
@@ -216,8 +216,8 @@ private struct PacemakerLinearSegments {
     let totalEnd: Double
 }
 
-/// 線形バーの分割パラメータ（ドーナツの RingDivisionParams 線形版）。
+/// Linear-bar division parameters, matching the donut ring division parameters.
 enum LinearDivisionParams {
-    /// セグメント間ギャップが全長に占める割合
+    /// Fraction of the total length occupied by gaps between segments.
     static let gapFraction: Double = 0.015
 }

@@ -1,9 +1,9 @@
 // MARK: - UpdateSettingsView.swift
-// アップデート設定タブ。Sparkle によるアップデートチェック状態の表示と手動チェックを提供する。
+// Update settings tab for showing Sparkle update check state and starting manual checks.
 
 import SwiftUI
 
-/// アップデート設定タブ UI
+/// Update settings tab UI.
 struct UpdateSettingsView: View {
 
     let releasesURL: URL

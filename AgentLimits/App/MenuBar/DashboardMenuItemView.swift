@@ -1,11 +1,11 @@
 // MARK: - DashboardMenuItemView.swift
-// NSMenuItem.view に設定する 1プロバイダーぶんのダッシュボード行。
-// 上部: プロバイダー名 + 残り時間 + リセット時刻
-// 中部: ウィンドウごとの線形バー（ラベル / バー / パーセント）
+// Dashboard row for one provider, assigned to NSMenuItem.view.
+// Top: provider name, remaining time, and reset time.
+// Middle: per-window linear bars with label, bar, and value.
 
 import SwiftUI
 
-/// メニューバーダッシュボードの1プロバイダー行。NSHostingView でラップして NSMenuItem.view に設定する。
+/// One provider row in the menu bar dashboard, wrapped in NSHostingView for NSMenuItem.view.
 struct DashboardMenuItemView: View {
     let provider: UsageProvider
     let snapshot: UsageSnapshot
@@ -18,8 +18,8 @@ struct DashboardMenuItemView: View {
     private var showDailySpendLeft = false
     @Environment(\.colorScheme) private var colorScheme
 
-    // NSVisualEffectView のmaterial selectionはアクセントカラーより暗く合成されるため、
-    // ダークモード時のみHSB空間で明度を下げてネイティブに近づける
+    // NSVisualEffectView selection material composites darker than the accent color,
+    // so darken it in HSB space only in dark mode to better match native menus.
     private var menuHighlightColor: Color {
         guard colorScheme == .dark,
               let rgb = NSColor.controlAccentColor.usingColorSpace(.deviceRGB) else {
@@ -53,7 +53,7 @@ struct DashboardMenuItemView: View {
         .onHover { isHovered = $0 }
     }
 
-    // MARK: - ヘッダー行
+    // MARK: - Header Row
 
     private var headerRow: some View {
         HStack(spacing: 6) {
@@ -70,7 +70,7 @@ struct DashboardMenuItemView: View {
         .font(.system(size: 11))
     }
 
-    // MARK: - ウィンドウ行
+    // MARK: - Window Rows
 
     @ViewBuilder
     private var windowRows: some View {
@@ -160,7 +160,7 @@ struct DashboardMenuItemView: View {
         return showAbsoluteSpendAmount ? 86 : 112
     }
 
-    // MARK: - 時間テキスト
+    // MARK: - Time Text
 
     private var primaryRemainingText: String {
         guard let window = snapshot.primaryWindow, let resetAt = window.resetAt else { return "--" }

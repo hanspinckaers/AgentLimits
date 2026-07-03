@@ -76,7 +76,7 @@ extension ClaudeUsageResponse {
         guard let source, let usedPercent = source.utilization else {
             return nil
         }
-        // resets_at が null の場合は初期状態として扱い、UsageWindow を作らない
+        // Treat null resets_at as an initial state and do not create a UsageWindow.
         guard let resetAtString = source.resets_at,
               let resetAt = parseResetDate(resetAtString) else {
             return nil

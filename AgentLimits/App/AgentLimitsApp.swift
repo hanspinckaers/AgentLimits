@@ -65,7 +65,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     private var menuBarController: MenuBarController?
 
     func applicationWillFinishLaunching(_ notification: Notification) {
-        // できるだけ早く accessory に設定し、Dock アイコンを表示しない。
+        // Switch to accessory mode as early as possible so no Dock icon appears.
         NSApp.setActivationPolicy(.accessory)
     }
 

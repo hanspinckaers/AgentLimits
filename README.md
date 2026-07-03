@@ -47,7 +47,7 @@ When you open the menu bar menu, a dashboard appears at the top showing per-prov
 - **Pacemaker bar**: divided into time segments (5h: 5 segments, weekly: 7 segments, monthly: single continuous bar) with gaps, matching the widget inner ring
 - Clicking a dashboard row opens the provider's usage page in the browser
 - Dashboard visibility is configurable per provider in **Usage** settings (**Show dashboard in menu**)
-- Menu also includes: **Display Mode**, **Language** (System/Japanese/English), **Wake Up → Run Now**, **Start app at login**, and **Check for Updates...**
+- Menu also includes: **Display Mode**, **Language**, **Wake Up → Run Now**, **Start app at login**, and **Check for Updates...**
 
 ![](./images/agentlimits_menu.png)
 
@@ -153,7 +153,7 @@ Pacemaker shows a time-based usage benchmark to help you stay on track.
 - Bundled script for Claude Code status line integration (path shown in **Advanced → Bundled Scripts**)
 - Reads Claude Code usage snapshot + App Group settings (display mode, language, thresholds, colors)
 - Outputs a single line with 5-hour/weekly usage, reset times, and update time
-- Options: `-ja`, `-en`, `-r` (remaining), `-u` (used), `-p` (pacemaker), `-i` (usage + pacemaker inline), `-d` (debug)
+- Options: `-en`, `-r` (remaining), `-u` (used), `-p` (pacemaker), `-i` (usage + pacemaker inline), `-d` (debug)
 - Requires `jq` (`brew install jq`)
 
 ## Advanced: Storage (App Group)
