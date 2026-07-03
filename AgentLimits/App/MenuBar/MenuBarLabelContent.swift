@@ -104,7 +104,7 @@ struct MenuBarPercentLineView: View {
                             .lineLimit(1)
                     }
                     if let daily = spendParts.daily {
-                        Text(daily)
+                        Text(menuBarDailyText(daily))
                             .font(.system(size: 9.5, weight: .medium, design: .monospaced))
                             .lineLimit(1)
                     }
@@ -140,6 +140,12 @@ struct MenuBarPercentLineView: View {
     private func menuBarPercentText(for window: UsageWindow) -> String {
         let percent = displayMode.displayPercent(from: window.usedPercent, window: window)
         return UsagePercentFormatter.formatPercentText(percent)
+    }
+
+    private func menuBarDailyText(_ text: String) -> String {
+        text
+            .replacingOccurrences(of: "/wd", with: "")
+            .replacingOccurrences(of: "/d", with: "")
     }
 
     private func resolveStatusColor(_ window: UsageWindow?, windowKind: UsageWindowKind) -> Color {
