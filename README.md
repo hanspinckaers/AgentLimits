@@ -2,18 +2,21 @@
 
 **In Development**
 
-## Added in This Fork
-- Claude Enterprise monthly spend limits are parsed from text such as `$383.40 of $1,000.00 spent`, including reset date and used percentage.
-- Monthly limits can be shown in the menu bar as compact spend text, with optional daily and workday remaining spend.
-- Menu bar status text uses native macOS template coloring so active and inactive displays use the correct system tint.
-- Comments translated to English.
+> [!NOTE]
+> **Added in this fork**
+> - Claude Enterprise monthly spend limits are parsed from text such as `$383.40 of $1,000.00 spent`, including reset date and used percentage.
+> - Monthly limits can be shown in the menu bar as compact spend text, with optional daily and workday remaining spend.
+> - Menu bar status text uses native macOS template coloring so active and inactive displays use the correct system tint.
+> - Comments translated to English.
+>
+> **Download latest build:** [AgentLimits.zip](https://github.com/hanspinckaers/AgentLimits/releases/latest/download/AgentLimits.zip)
 
 AgentLimits is a macOS Sonoma+ menu bar app with Notification Center widgets. It shows usage limits for ChatGPT Codex / Claude Code (5-hour + weekly, or monthly when the provider returns a monthly window), GitHub Copilot (monthly premium requests), and ccusage token usage.
 
 ![](./images/agentlimit_sample.png)
 
 ## Download
-Download the latest build: [Download](https://github.com/Nihondo/AgentLimits/releases/latest/download/AgentLimits.zip)
+Download the latest build: [AgentLimits.zip](https://github.com/hanspinckaers/AgentLimits/releases/latest/download/AgentLimits.zip)
 
 ## Quick Start (First-Time Setup)
 1. Run AgentLimits.
