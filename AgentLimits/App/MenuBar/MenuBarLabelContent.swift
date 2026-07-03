@@ -75,6 +75,10 @@ struct MenuBarPercentLineView: View {
     private var statusOrangeHex: String = ""
     @AppStorage(UsageColorKeys.statusRed, store: AppGroupDefaults.shared)
     private var statusRedHex: String = ""
+    @AppStorage(UserDefaultsKeys.showAbsoluteSpendAmount, store: AppGroupDefaults.shared)
+    private var showAbsoluteSpendAmount = false
+    @AppStorage(UserDefaultsKeys.showDailySpendLeft, store: AppGroupDefaults.shared)
+    private var showDailySpendLeft = false
 
     var body: some View {
         HStack(spacing: 2) {
@@ -101,6 +105,13 @@ struct MenuBarPercentLineView: View {
             )
             let percent = displayMode.displayPercent(from: window.usedPercent, window: window)
             let displayText = UsagePercentFormatter.formatPercentText(percent)
+                + UsageSpendFormatter.formatEnabledSpendSuffix(
+                    for: window,
+                    displayMode: displayMode.makeDisplayModeRaw(),
+                    showAbsoluteAmount: showAbsoluteSpendAmount,
+                    showDailySpendLeft: showDailySpendLeft,
+                    compact: true
+                )
             if showPacemakerValue,
                let pacemakerPercent = window.calculatePacemakerPercent() {
                 let level = UsageStatusLevelResolver.levelForPacemakerMode(

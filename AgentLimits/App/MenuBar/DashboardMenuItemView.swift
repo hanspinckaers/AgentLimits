@@ -12,6 +12,10 @@ struct DashboardMenuItemView: View {
     let displayMode: UsageDisplayMode
 
     @State private var isHovered = false
+    @AppStorage(UserDefaultsKeys.showAbsoluteSpendAmount, store: AppGroupDefaults.shared)
+    private var showAbsoluteSpendAmount = false
+    @AppStorage(UserDefaultsKeys.showDailySpendLeft, store: AppGroupDefaults.shared)
+    private var showDailySpendLeft = false
     @Environment(\.colorScheme) private var colorScheme
 
     // NSVisualEffectView のmaterial selectionはアクセントカラーより暗く合成されるため、
@@ -98,12 +102,28 @@ struct DashboardMenuItemView: View {
                 displayMode: displayMode
             )
 
-            Text(UsagePercentFormatter.formatPercentText(
-                displayMode.displayPercent(from: window.usedPercent, window: window)
-            ))
+            Text(windowDisplayText(window))
             .font(.system(size: 11))
-            .frame(width: 38, alignment: .trailing)
+            .lineLimit(1)
+            .minimumScaleFactor(0.75)
+            .frame(width: showSpendDetails(for: window) ? 118 : 38, alignment: .trailing)
         }
+    }
+
+    private func windowDisplayText(_ window: UsageWindow) -> String {
+        UsagePercentFormatter.formatPercentText(
+            displayMode.displayPercent(from: window.usedPercent, window: window)
+        ) + UsageSpendFormatter.formatEnabledSpendSuffix(
+            for: window,
+            displayMode: displayMode.makeDisplayModeRaw(),
+            showAbsoluteAmount: showAbsoluteSpendAmount,
+            showDailySpendLeft: showDailySpendLeft,
+            compact: true
+        )
+    }
+
+    private func showSpendDetails(for window: UsageWindow) -> Bool {
+        (showAbsoluteSpendAmount || showDailySpendLeft) && window.spendLimitAmount != nil
     }
 
     // MARK: - 時間テキスト

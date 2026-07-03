@@ -153,6 +153,8 @@ final class MenuBarController: NSObject {
             PacemakerThresholdKeys.warningDelta,
             PacemakerThresholdKeys.dangerDelta,
             UsageStatusThresholdStore.revisionKey,
+            SharedUserDefaultsKeys.showAbsoluteSpendAmount,
+            SharedUserDefaultsKeys.showDailySpendLeft,
         ] {
             appGroupDefaults?.addObserver(self, forKeyPath: key, options: [.new], context: nil)
         }
@@ -197,7 +199,8 @@ final class MenuBarController: NSObject {
             "usage_color_green", "usage_color_orange", "usage_color_red",
             "usage_color_pacemaker_status_orange", "usage_color_pacemaker_status_red",
             "pacemaker_warning_delta", "pacemaker_danger_delta",
-            "usage_color_threshold_revision",
+            "usage_color_threshold_revision", "usage_show_absolute_spend_amount",
+            "usage_show_daily_spend_left",
         ]
         guard let keyPath, allObservedKeys.contains(keyPath) else {
             super.observeValue(forKeyPath: keyPath, of: object, change: change, context: context)
@@ -225,7 +228,8 @@ final class MenuBarController: NSObject {
             "usage_color_green", "usage_color_orange", "usage_color_red",
             "usage_color_pacemaker_status_orange", "usage_color_pacemaker_status_red",
             "pacemaker_warning_delta", "pacemaker_danger_delta",
-            "usage_color_threshold_revision",
+            "usage_color_threshold_revision", "usage_show_absolute_spend_amount",
+            "usage_show_daily_spend_left",
         ]
         for key in appGroupKeys {
             observedAppGroupDefaults?.removeObserver(self, forKeyPath: key)
