@@ -366,7 +366,7 @@ enum UsageSpendFormatter {
             amount = spent
         }
 
-        return "\(formatAmount(amount, symbol: window.spendCurrencySymbol, compact: compact))/\(formatAmount(limit, symbol: window.spendCurrencySymbol, compact: compact))"
+        return "\(formatSpendAmount(amount, symbol: window.spendCurrencySymbol, compact: compact))/\(formatLimitAmount(limit, symbol: window.spendCurrencySymbol, compact: compact))"
     }
 
     static func formatDailySpendLeftText(
@@ -385,18 +385,81 @@ enum UsageSpendFormatter {
 
         let daysLeft = max(secondsLeft / 86_400, 1)
         let amountPerDay = max(0, remaining) / daysLeft
-        return "~\(formatAmount(amountPerDay, symbol: window.spendCurrencySymbol, compact: compact))/d left"
+        let dayText = "~\(formatSpendAmount(amountPerDay, symbol: window.spendCurrencySymbol, compact: compact))/d"
+        let workdayText: String
+        if let workdaysLeft = remainingWeekdays(from: now, to: resetAt),
+           workdaysLeft > 0 {
+            let amountPerWorkday = max(0, remaining) / workdaysLeft
+            workdayText = " (~\(formatSpendAmount(amountPerWorkday, symbol: window.spendCurrencySymbol, compact: compact))/wd)"
+        } else {
+            workdayText = ""
+        }
+        let text = dayText + workdayText
+        return compact ? text : "\(text) left"
     }
 
-    private static func formatAmount(_ amount: Double, symbol: String?, compact: Bool) -> String {
+    private static func formatSpendAmount(_ amount: Double, symbol: String?, compact: Bool) -> String {
         let formatter = NumberFormatter()
         formatter.numberStyle = .decimal
         formatter.groupingSeparator = ","
-        formatter.minimumFractionDigits = compact ? 0 : 2
-        formatter.maximumFractionDigits = compact ? 0 : 2
+        formatter.minimumFractionDigits = compact ? 2 : 2
+        formatter.maximumFractionDigits = compact ? 2 : 2
         let number = formatter.string(from: NSNumber(value: amount)) ?? String(format: "%.0f", amount)
+        return "\(resolvedCurrencySymbol(symbol))\(number)"
+    }
+
+    private static func formatLimitAmount(_ amount: Double, symbol: String?, compact: Bool) -> String {
+        guard compact else {
+            return formatSpendAmount(amount, symbol: symbol, compact: false)
+        }
+        let absoluteAmount = abs(amount)
+        let suffix: String
+        let scaledAmount: Double
+        if absoluteAmount >= 1_000_000 {
+            scaledAmount = amount / 1_000_000
+            suffix = "m"
+        } else if absoluteAmount >= 1_000 {
+            scaledAmount = amount / 1_000
+            suffix = "k"
+        } else {
+            return formatSpendAmount(amount, symbol: symbol, compact: true)
+        }
+
+        let formatter = NumberFormatter()
+        formatter.numberStyle = .decimal
+        formatter.groupingSeparator = ","
+        formatter.minimumFractionDigits = 0
+        formatter.maximumFractionDigits = scaledAmount.rounded() == scaledAmount ? 0 : 1
+        let number = formatter.string(from: NSNumber(value: scaledAmount)) ?? String(format: "%.1f", scaledAmount)
+        return "\(resolvedCurrencySymbol(symbol))\(number)\(suffix)"
+    }
+
+    private static func remainingWeekdays(from start: Date, to end: Date, calendar: Calendar = .current) -> Double? {
+        guard end > start else { return nil }
+        var totalWeekdaySeconds: TimeInterval = 0
+        var cursor = start
+
+        while cursor < end {
+            guard let nextDay = calendar.nextDate(
+                after: cursor,
+                matching: DateComponents(hour: 0, minute: 0, second: 0),
+                matchingPolicy: .nextTime
+            ) else {
+                break
+            }
+            let segmentEnd = min(nextDay, end)
+            if !calendar.isDateInWeekend(cursor) {
+                totalWeekdaySeconds += max(0, segmentEnd.timeIntervalSince(cursor))
+            }
+            cursor = segmentEnd
+        }
+
+        return totalWeekdaySeconds > 0 ? totalWeekdaySeconds / 86_400 : nil
+    }
+
+    private static func resolvedCurrencySymbol(_ symbol: String?) -> String {
         let resolvedSymbol = (symbol?.isEmpty == false) ? symbol! : "$"
-        return "\(resolvedSymbol)\(number)"
+        return resolvedSymbol
     }
 }
 

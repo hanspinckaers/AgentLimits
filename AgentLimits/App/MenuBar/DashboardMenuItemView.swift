@@ -106,24 +106,36 @@ struct DashboardMenuItemView: View {
             .font(.system(size: 11))
             .lineLimit(1)
             .minimumScaleFactor(0.75)
-            .frame(width: showSpendDetails(for: window) ? 118 : 38, alignment: .trailing)
+            .frame(width: spendTextWidth(for: window), alignment: .trailing)
         }
     }
 
     private func windowDisplayText(_ window: UsageWindow) -> String {
-        UsagePercentFormatter.formatPercentText(
-            displayMode.displayPercent(from: window.usedPercent, window: window)
-        ) + UsageSpendFormatter.formatEnabledSpendSuffix(
+        let spendText = UsageSpendFormatter.formatEnabledSpendSuffix(
             for: window,
             displayMode: displayMode.makeDisplayModeRaw(),
             showAbsoluteAmount: showAbsoluteSpendAmount,
             showDailySpendLeft: showDailySpendLeft,
             compact: true
+        ).trimmingCharacters(in: .whitespacesAndNewlines)
+        if !spendText.isEmpty {
+            return spendText
+        }
+        return UsagePercentFormatter.formatPercentText(
+            displayMode.displayPercent(from: window.usedPercent, window: window)
         )
     }
 
     private func showSpendDetails(for window: UsageWindow) -> Bool {
         (showAbsoluteSpendAmount || showDailySpendLeft) && window.spendLimitAmount != nil
+    }
+
+    private func spendTextWidth(for window: UsageWindow) -> CGFloat {
+        guard showSpendDetails(for: window) else { return 38 }
+        if showAbsoluteSpendAmount && showDailySpendLeft {
+            return 188
+        }
+        return showAbsoluteSpendAmount ? 86 : 112
     }
 
     // MARK: - 時間テキスト

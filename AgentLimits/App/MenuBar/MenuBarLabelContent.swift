@@ -33,7 +33,7 @@ struct MenuBarLabelContentView: View {
     }
 }
 
-/// 1プロバイダーのメニューバーステータス（名前＋パーセント行）
+/// 1プロバイダーのメニューバーステータス。
 struct MenuBarProviderStatusView: View {
     let provider: UsageProvider
     let primaryWindow: UsageWindow?
@@ -43,23 +43,18 @@ struct MenuBarProviderStatusView: View {
     let colorScheme: ColorScheme
 
     var body: some View {
-        VStack(alignment: .leading, spacing: -2) {
-            Text(provider.displayName)
-                .font(.system(size: 9.5, weight: .semibold))
-                .foregroundStyle(.primary)
-            MenuBarPercentLineView(
-                provider: provider,
-                primaryWindow: primaryWindow,
-                secondaryWindow: secondaryWindow,
-                isSingleMonthlyWindow: isSingleMonthlyWindow,
-                displayMode: displayMode,
-                colorScheme: colorScheme
-            )
-        }
+        MenuBarPercentLineView(
+            provider: provider,
+            primaryWindow: primaryWindow,
+            secondaryWindow: secondaryWindow,
+            isSingleMonthlyWindow: isSingleMonthlyWindow,
+            displayMode: displayMode,
+            colorScheme: colorScheme
+        )
     }
 }
 
-/// 5h/週次のパーセント表示行（ペースメーカー矢印付き）
+/// 5h/週次のパーセント表示行。
 struct MenuBarPercentLineView: View {
     let provider: UsageProvider
     let primaryWindow: UsageWindow?
@@ -67,8 +62,6 @@ struct MenuBarPercentLineView: View {
     let isSingleMonthlyWindow: Bool
     let displayMode: UsageDisplayMode
     let colorScheme: ColorScheme
-    @AppStorage(UserDefaultsKeys.menuBarShowPacemakerValue, store: AppGroupDefaults.shared)
-    private var showPacemakerValue: Bool = true
     @AppStorage(UsageColorKeys.statusGreen, store: AppGroupDefaults.shared)
     private var statusGreenHex: String = ""
     @AppStorage(UsageColorKeys.statusOrange, store: AppGroupDefaults.shared)
@@ -103,41 +96,25 @@ struct MenuBarPercentLineView: View {
                 statusColor,
                 for: colorScheme
             )
-            let percent = displayMode.displayPercent(from: window.usedPercent, window: window)
-            let displayText = UsagePercentFormatter.formatPercentText(percent)
-                + UsageSpendFormatter.formatEnabledSpendSuffix(
-                    for: window,
-                    displayMode: displayMode.makeDisplayModeRaw(),
-                    showAbsoluteAmount: showAbsoluteSpendAmount,
-                    showDailySpendLeft: showDailySpendLeft,
-                    compact: true
-                )
-            if showPacemakerValue,
-               let pacemakerPercent = window.calculatePacemakerPercent() {
-                let level = UsageStatusLevelResolver.levelForPacemakerMode(
-                    usedPercent: window.usedPercent,
-                    pacemakerPercent: pacemakerPercent,
-                    warningDelta: PacemakerThresholdSettings.loadWarningDelta(),
-                    dangerDelta: PacemakerThresholdSettings.loadDangerDelta()
-                )
-                let arrowIcon = level.pacemakerArrowIcon
-                let indicatorColor = level.pacemakerIndicatorColor
-                let adjustedIndicatorColor = MenuBarTextColorAdjuster.adjustedColor(
-                    indicatorColor,
-                    for: colorScheme
-                )
-                if arrowIcon.isEmpty {
-                    Text(displayText).foregroundColor(adjustedStatusColor)
-                } else {
-                    Text(displayText).foregroundColor(adjustedStatusColor)
-                    + Text(arrowIcon).foregroundColor(adjustedIndicatorColor)
-                }
-            } else {
-                Text(displayText).foregroundColor(adjustedStatusColor)
-            }
+            Text(menuBarDisplayText(for: window)).foregroundColor(adjustedStatusColor)
         } else {
             Text(UsagePercentFormatter.formatPercentText(nil)).foregroundStyle(.secondary)
         }
+    }
+
+    private func menuBarDisplayText(for window: UsageWindow) -> String {
+        let spendText = UsageSpendFormatter.formatEnabledSpendSuffix(
+            for: window,
+            displayMode: displayMode.makeDisplayModeRaw(),
+            showAbsoluteAmount: showAbsoluteSpendAmount,
+            showDailySpendLeft: showDailySpendLeft,
+            compact: true
+        ).trimmingCharacters(in: .whitespacesAndNewlines)
+        if !spendText.isEmpty {
+            return spendText
+        }
+        let percent = displayMode.displayPercent(from: window.usedPercent, window: window)
+        return UsagePercentFormatter.formatPercentText(percent)
     }
 
     private func resolveStatusColor(_ window: UsageWindow?, windowKind: UsageWindowKind) -> Color {
