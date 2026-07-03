@@ -30,6 +30,8 @@ enum SharedUserDefaultsKeys {
     static let cachedDisplayMode = "usage_display_mode_cached"
     static let menuBarShowPacemakerValue = "menu_bar_show_pacemaker_value"
     static let pacemakerRingWarningEnabled = "pacemaker_ring_warning_enabled"
+    static let showAbsoluteSpendAmount = "usage_show_absolute_spend_amount"
+    static let showDailySpendLeft = "usage_show_daily_spend_left"
 }
 
 // MARK: - CLI Command Paths
@@ -318,6 +320,83 @@ enum UsagePercentFormatter {
         // Clamp to a valid range before formatting.
         let clamped = max(0, min(100, percent))
         return String(format: "%.0f%%", clamped)
+    }
+}
+
+// MARK: - Usage Spend Formatting
+
+/// Formats optional spend-limit data attached to a usage window.
+enum UsageSpendFormatter {
+    static func formatEnabledSpendSuffix(
+        for window: UsageWindow?,
+        displayMode: UsageDisplayModeRaw,
+        showAbsoluteAmount: Bool,
+        showDailySpendLeft: Bool,
+        compact: Bool = true
+    ) -> String {
+        var parts: [String] = []
+        if showAbsoluteAmount,
+           let amountText = formatAbsoluteSpendText(for: window, displayMode: displayMode, compact: compact) {
+            parts.append(amountText)
+        }
+        if showDailySpendLeft,
+           let dailyText = formatDailySpendLeftText(for: window, compact: compact) {
+            parts.append(dailyText)
+        }
+        return parts.isEmpty ? "" : " " + parts.joined(separator: " ")
+    }
+
+    static func formatAbsoluteSpendText(
+        for window: UsageWindow?,
+        displayMode: UsageDisplayModeRaw,
+        compact: Bool = true
+    ) -> String? {
+        guard let window,
+              let limit = window.spendLimitAmount,
+              limit > 0 else {
+            return nil
+        }
+
+        let amount: Double
+        switch displayMode {
+        case .remaining:
+            amount = window.remainingSpendAmount ?? 0
+        case .used, .usedWithPacemaker:
+            guard let spent = window.spendAmount else { return nil }
+            amount = spent
+        }
+
+        return "\(formatAmount(amount, symbol: window.spendCurrencySymbol, compact: compact))/\(formatAmount(limit, symbol: window.spendCurrencySymbol, compact: compact))"
+    }
+
+    static func formatDailySpendLeftText(
+        for window: UsageWindow?,
+        now: Date = Date(),
+        compact: Bool = true
+    ) -> String? {
+        guard let window,
+              let remaining = window.remainingSpendAmount,
+              let resetAt = window.resetAt else {
+            return nil
+        }
+
+        let secondsLeft = resetAt.timeIntervalSince(now)
+        guard secondsLeft > 0 else { return nil }
+
+        let daysLeft = max(secondsLeft / 86_400, 1)
+        let amountPerDay = max(0, remaining) / daysLeft
+        return "~\(formatAmount(amountPerDay, symbol: window.spendCurrencySymbol, compact: compact))/d left"
+    }
+
+    private static func formatAmount(_ amount: Double, symbol: String?, compact: Bool) -> String {
+        let formatter = NumberFormatter()
+        formatter.numberStyle = .decimal
+        formatter.groupingSeparator = ","
+        formatter.minimumFractionDigits = compact ? 0 : 2
+        formatter.maximumFractionDigits = compact ? 0 : 2
+        let number = formatter.string(from: NSNumber(value: amount)) ?? String(format: "%.0f", amount)
+        let resolvedSymbol = (symbol?.isEmpty == false) ? symbol! : "$"
+        return "\(resolvedSymbol)\(number)"
     }
 }
 
@@ -742,13 +821,44 @@ struct UsageWindow: Codable {
     let usedCount: Int?
     /// Limit count (e.g., total premium interactions quota). Optional, Copilot only.
     let limitCount: Int?
+    /// Money spent in the current spend-limit window. Optional, Claude Enterprise spend limits only.
+    let spendAmount: Double?
+    /// Total money available in the current spend-limit window. Optional, Claude Enterprise spend limits only.
+    let spendLimitAmount: Double?
+    /// Currency symbol for spend-limit display.
+    let spendCurrencySymbol: String?
+    /// Currency code for spend-limit display when available.
+    let spendCurrencyCode: String?
+
+    init(
+        kind: UsageWindowKind,
+        usedPercent: Double,
+        resetAt: Date?,
+        limitWindowSeconds: TimeInterval,
+        usedCount: Int? = nil,
+        limitCount: Int? = nil,
+        spendAmount: Double? = nil,
+        spendLimitAmount: Double? = nil,
+        spendCurrencySymbol: String? = nil,
+        spendCurrencyCode: String? = nil
+    ) {
+        self.kind = kind
+        self.usedPercent = usedPercent
+        self.resetAt = resetAt
+        self.limitWindowSeconds = limitWindowSeconds
+        self.usedCount = usedCount
+        self.limitCount = limitCount
+        self.spendAmount = spendAmount
+        self.spendLimitAmount = spendLimitAmount
+        self.spendCurrencySymbol = spendCurrencySymbol
+        self.spendCurrencyCode = spendCurrencyCode
+    }
 }
 
 extension UsageWindow {
-    /// Convenience initializer without count fields (defaults to nil).
-    init(kind: UsageWindowKind, usedPercent: Double, resetAt: Date?, limitWindowSeconds: TimeInterval) {
-        self.init(kind: kind, usedPercent: usedPercent, resetAt: resetAt,
-                  limitWindowSeconds: limitWindowSeconds, usedCount: nil, limitCount: nil)
+    var remainingSpendAmount: Double? {
+        guard let limit = spendLimitAmount else { return nil }
+        return max(0, limit - (spendAmount ?? 0))
     }
 
     /// 週次ウィンドウより長い期間かどうかを返します。

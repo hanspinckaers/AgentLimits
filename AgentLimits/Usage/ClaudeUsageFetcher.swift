@@ -12,6 +12,10 @@ struct ClaudeUsageResponse: Codable {
     struct Window: Codable {
         let utilization: Double?
         let resets_at: String?
+        let spend_amount: Double?
+        let spend_limit_amount: Double?
+        let spend_currency_symbol: String?
+        let spend_currency_code: String?
     }
 
     let five_hour: Window?
@@ -100,7 +104,11 @@ extension ClaudeUsageResponse {
             kind: .primary,
             usedPercent: usedPercent,
             resetAt: resetAt,
-            limitWindowSeconds: Self.computeMonthlyLimitWindowSeconds(resetAt: resetAt)
+            limitWindowSeconds: Self.computeMonthlyLimitWindowSeconds(resetAt: resetAt),
+            spendAmount: source.spend_amount,
+            spendLimitAmount: source.spend_limit_amount,
+            spendCurrencySymbol: source.spend_currency_symbol,
+            spendCurrencyCode: source.spend_currency_code
         )
     }
 
@@ -298,6 +306,23 @@ final class ClaudeUsageFetcher {
           return (spent / limit) * 100;
         }
 
+        function parseSpendAmounts(text) {
+          const spendMatch = text.match(/([^0-9\\s\\n]*)\\s*([0-9][0-9,]*(?:\\.[0-9]+)?)\\s+of\\s+([^0-9\\s\\n]*)\\s*([0-9][0-9,]*(?:\\.[0-9]+)?)\\s+spent/i);
+          if (!spendMatch) { return null; }
+
+          const spent = Number(spendMatch[2].replace(/,/g, ""));
+          const limit = Number(spendMatch[4].replace(/,/g, ""));
+          if (!Number.isFinite(spent) || !Number.isFinite(limit) || limit <= 0) {
+            return null;
+          }
+
+          return {
+            spend_amount: spent,
+            spend_limit_amount: limit,
+            spend_currency_symbol: spendMatch[1] || spendMatch[3] || "$"
+          };
+        }
+
         function parseEnterpriseSpendWindow() {
           const rawText = document.body ? document.body.innerText : "";
           const text = rawText.replace(/\\u00a0/g, " ");
@@ -353,9 +378,11 @@ final class ClaudeUsageFetcher {
           }
           if (Number.isNaN(resetAt.getTime())) { return null; }
 
+          const amounts = parseSpendAmounts(text) || {};
           return {
             utilization: Math.max(0, Math.min(100, utilization)),
-            resets_at: resetAt.toISOString()
+            resets_at: resetAt.toISOString(),
+            ...amounts
           };
         }
 

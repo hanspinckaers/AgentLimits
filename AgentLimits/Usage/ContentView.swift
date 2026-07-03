@@ -23,6 +23,8 @@ struct ContentView: View {
     @AppStorage(UserDefaultsKeys.menuBarDashboardCodexEnabled) private var menuBarDashboardCodexEnabled = true
     @AppStorage(UserDefaultsKeys.menuBarDashboardClaudeEnabled) private var menuBarDashboardClaudeEnabled = true
     @AppStorage(UserDefaultsKeys.menuBarDashboardCopilotEnabled) private var menuBarDashboardCopilotEnabled = true
+    @AppStorage(UserDefaultsKeys.showAbsoluteSpendAmount, store: AppGroupDefaults.shared) private var showAbsoluteSpendAmount = false
+    @AppStorage(UserDefaultsKeys.showDailySpendLeft, store: AppGroupDefaults.shared) private var showDailySpendLeft = false
     @State private var orderedProviders: [UsageProvider] = ProviderOrderStore.loadProviderOrder()
     @State private var isShowingClearDataConfirm = false
     @State private var isClearingData = false
@@ -51,6 +53,13 @@ struct ContentView: View {
 
                         SettingsFormSection {
                             menuBarToggleRow
+                        }
+
+                        SettingsFormSection(title: "Spend Display") {
+                            Toggle("Show absolute spend amount", isOn: $showAbsoluteSpendAmount)
+                                .toggleStyle(.checkbox)
+                            Toggle("Show daily spend left", isOn: $showDailySpendLeft)
+                                .toggleStyle(.checkbox)
                         }
 
                         SettingsFormSection(title: "settings.providerOrder".localized()) {
@@ -107,6 +116,12 @@ struct ContentView: View {
         .onChange(of: refreshIntervalMinutes) { _, _ in
             // Restart auto-refresh and notify widgets when interval changes.
             viewModel.restartAutoRefresh()
+            WidgetCenter.shared.reloadAllTimelines()
+        }
+        .onChange(of: showAbsoluteSpendAmount) { _, _ in
+            WidgetCenter.shared.reloadAllTimelines()
+        }
+        .onChange(of: showDailySpendLeft) { _, _ in
             WidgetCenter.shared.reloadAllTimelines()
         }
         .onAppear {
@@ -488,6 +503,10 @@ private struct UsageWindowRow: View {
     let title: String
     let window: UsageWindow?
     let displayMode: UsageDisplayMode
+    @AppStorage(UserDefaultsKeys.showAbsoluteSpendAmount, store: AppGroupDefaults.shared)
+    private var showAbsoluteSpendAmount = false
+    @AppStorage(UserDefaultsKeys.showDailySpendLeft, store: AppGroupDefaults.shared)
+    private var showDailySpendLeft = false
 
     var body: some View {
         HStack(spacing: 8) {
@@ -495,7 +514,7 @@ private struct UsageWindowRow: View {
                 .font(.body)
             Spacer()
             HStack(spacing: 6) {
-                Text(windowPercentText)
+                Text(windowDisplayText)
                     .font(.body)
                     .monospacedDigit()
                 Text("•")
@@ -520,6 +539,16 @@ private struct UsageWindowRow: View {
     private var windowPercentText: String {
         let percent = window.map { displayMode.displayPercent(from: $0.usedPercent, window: $0) }
         return UsagePercentFormatter.formatPercentText(percent)
+    }
+
+    private var windowDisplayText: String {
+        windowPercentText + UsageSpendFormatter.formatEnabledSpendSuffix(
+            for: window,
+            displayMode: displayMode.makeDisplayModeRaw(),
+            showAbsoluteAmount: showAbsoluteSpendAmount,
+            showDailySpendLeft: showDailySpendLeft,
+            compact: false
+        )
     }
 }
 

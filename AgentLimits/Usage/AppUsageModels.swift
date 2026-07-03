@@ -17,6 +17,8 @@ enum UserDefaultsKeys {
     static let menuBarDashboardCopilotEnabled = "menu_bar_dashboard_copilot_enabled"
     static let menuBarShowPacemakerValue = SharedUserDefaultsKeys.menuBarShowPacemakerValue
     static let pacemakerRingWarningEnabled = SharedUserDefaultsKeys.pacemakerRingWarningEnabled
+    static let showAbsoluteSpendAmount = SharedUserDefaultsKeys.showAbsoluteSpendAmount
+    static let showDailySpendLeft = SharedUserDefaultsKeys.showDailySpendLeft
     static let providerDisplayOrder = "provider_display_order"
 }
 
