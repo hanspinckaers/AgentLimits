@@ -74,45 +74,69 @@ struct MenuBarPercentLineView: View {
     private var showDailySpendLeft = false
 
     var body: some View {
-        HStack(spacing: 2) {
-            percentTextView(primaryWindow, windowKind: .primary)
+        HStack(alignment: .center, spacing: 2) {
+            valueView(primaryWindow, windowKind: .primary)
             if !isSingleMonthlyWindow {
                 Text("/")
+                    .font(.system(size: 12, weight: .semibold, design: .monospaced))
                     .foregroundStyle(.secondary)
-                percentTextView(secondaryWindow, windowKind: .secondary)
+                valueView(secondaryWindow, windowKind: .secondary)
             }
         }
-        .font(.system(size: 13.5, weight: .semibold, design: .monospaced))
         .monospacedDigit()
-        .lineLimit(1)
-        .minimumScaleFactor(0.8)
     }
 
     @ViewBuilder
-    private func percentTextView(_ window: UsageWindow?, windowKind: UsageWindowKind) -> some View {
+    private func valueView(_ window: UsageWindow?, windowKind: UsageWindowKind) -> some View {
         if let window {
             let statusColor = resolveStatusColor(window, windowKind: windowKind)
             let adjustedStatusColor = MenuBarTextColorAdjuster.adjustedColor(
                 statusColor,
                 for: colorScheme
             )
-            Text(menuBarDisplayText(for: window)).foregroundColor(adjustedStatusColor)
+            let spendParts = menuBarSpendParts(for: window)
+            if spendParts.absolute != nil || spendParts.daily != nil {
+                VStack(alignment: .trailing, spacing: -2) {
+                    if let absolute = spendParts.absolute {
+                        Text(absolute)
+                            .font(.system(size: 10.5, weight: .semibold, design: .monospaced))
+                            .lineLimit(1)
+                    }
+                    if let daily = spendParts.daily {
+                        Text(daily)
+                            .font(.system(size: 9.5, weight: .medium, design: .monospaced))
+                            .lineLimit(1)
+                    }
+                }
+                .foregroundColor(adjustedStatusColor)
+                .minimumScaleFactor(0.8)
+            } else {
+                Text(menuBarPercentText(for: window))
+                    .font(.system(size: 13.5, weight: .semibold, design: .monospaced))
+                    .lineLimit(1)
+                    .minimumScaleFactor(0.8)
+                    .foregroundColor(adjustedStatusColor)
+            }
         } else {
-            Text(UsagePercentFormatter.formatPercentText(nil)).foregroundStyle(.secondary)
+            Text(UsagePercentFormatter.formatPercentText(nil))
+                .font(.system(size: 13.5, weight: .semibold, design: .monospaced))
+                .lineLimit(1)
+                .minimumScaleFactor(0.8)
+                .foregroundStyle(.secondary)
         }
     }
 
-    private func menuBarDisplayText(for window: UsageWindow) -> String {
-        let spendText = UsageSpendFormatter.formatEnabledSpendSuffix(
+    private func menuBarSpendParts(for window: UsageWindow) -> (absolute: String?, daily: String?) {
+        UsageSpendFormatter.formatEnabledSpendParts(
             for: window,
             displayMode: displayMode.makeDisplayModeRaw(),
             showAbsoluteAmount: showAbsoluteSpendAmount,
             showDailySpendLeft: showDailySpendLeft,
             compact: true
-        ).trimmingCharacters(in: .whitespacesAndNewlines)
-        if !spendText.isEmpty {
-            return spendText
-        }
+        )
+    }
+
+    private func menuBarPercentText(for window: UsageWindow) -> String {
         let percent = displayMode.displayPercent(from: window.usedPercent, window: window)
         return UsagePercentFormatter.formatPercentText(percent)
     }

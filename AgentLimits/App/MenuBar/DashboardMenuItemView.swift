@@ -102,25 +102,47 @@ struct DashboardMenuItemView: View {
                 displayMode: displayMode
             )
 
-            Text(windowDisplayText(window))
-            .font(.system(size: 11))
-            .lineLimit(1)
-            .minimumScaleFactor(0.75)
-            .frame(width: spendTextWidth(for: window), alignment: .trailing)
+            windowValueView(window)
         }
     }
 
-    private func windowDisplayText(_ window: UsageWindow) -> String {
-        let spendText = UsageSpendFormatter.formatEnabledSpendSuffix(
+    @ViewBuilder
+    private func windowValueView(_ window: UsageWindow) -> some View {
+        let spendParts = spendParts(for: window)
+        if spendParts.absolute != nil || spendParts.daily != nil {
+            VStack(alignment: .trailing, spacing: -1) {
+                if let absolute = spendParts.absolute {
+                    Text(absolute)
+                        .font(.system(size: 10.5))
+                }
+                if let daily = spendParts.daily {
+                    Text(daily)
+                        .font(.system(size: 9.5))
+                }
+            }
+            .lineLimit(1)
+            .minimumScaleFactor(0.75)
+            .frame(width: spendTextWidth(for: window), alignment: .trailing)
+        } else {
+            Text(percentText(for: window))
+                .font(.system(size: 11))
+                .lineLimit(1)
+                .minimumScaleFactor(0.75)
+                .frame(width: spendTextWidth(for: window), alignment: .trailing)
+        }
+    }
+
+    private func spendParts(for window: UsageWindow) -> (absolute: String?, daily: String?) {
+        UsageSpendFormatter.formatEnabledSpendParts(
             for: window,
             displayMode: displayMode.makeDisplayModeRaw(),
             showAbsoluteAmount: showAbsoluteSpendAmount,
             showDailySpendLeft: showDailySpendLeft,
             compact: true
-        ).trimmingCharacters(in: .whitespacesAndNewlines)
-        if !spendText.isEmpty {
-            return spendText
-        }
+        )
+    }
+
+    private func percentText(for window: UsageWindow) -> String {
         return UsagePercentFormatter.formatPercentText(
             displayMode.displayPercent(from: window.usedPercent, window: window)
         )
@@ -133,7 +155,7 @@ struct DashboardMenuItemView: View {
     private func spendTextWidth(for window: UsageWindow) -> CGFloat {
         guard showSpendDetails(for: window) else { return 38 }
         if showAbsoluteSpendAmount && showDailySpendLeft {
-            return 188
+            return 112
         }
         return showAbsoluteSpendAmount ? 86 : 112
     }

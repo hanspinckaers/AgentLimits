@@ -334,16 +334,37 @@ enum UsageSpendFormatter {
         showDailySpendLeft: Bool,
         compact: Bool = true
     ) -> String {
+        let spendParts = formatEnabledSpendParts(
+            for: window,
+            displayMode: displayMode,
+            showAbsoluteAmount: showAbsoluteAmount,
+            showDailySpendLeft: showDailySpendLeft,
+            compact: compact
+        )
         var parts: [String] = []
-        if showAbsoluteAmount,
-           let amountText = formatAbsoluteSpendText(for: window, displayMode: displayMode, compact: compact) {
+        if let amountText = spendParts.absolute {
             parts.append(amountText)
         }
-        if showDailySpendLeft,
-           let dailyText = formatDailySpendLeftText(for: window, compact: compact) {
+        if let dailyText = spendParts.daily {
             parts.append(dailyText)
         }
         return parts.isEmpty ? "" : " " + parts.joined(separator: " ")
+    }
+
+    static func formatEnabledSpendParts(
+        for window: UsageWindow?,
+        displayMode: UsageDisplayModeRaw,
+        showAbsoluteAmount: Bool,
+        showDailySpendLeft: Bool,
+        compact: Bool = true
+    ) -> (absolute: String?, daily: String?) {
+        let absolute = showAbsoluteAmount
+            ? formatAbsoluteSpendText(for: window, displayMode: displayMode, compact: compact)
+            : nil
+        let daily = showDailySpendLeft
+            ? formatDailySpendLeftText(for: window, compact: compact)
+            : nil
+        return (absolute, daily)
     }
 
     static func formatAbsoluteSpendText(
