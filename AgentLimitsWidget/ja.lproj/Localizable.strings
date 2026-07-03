@@ -1,0 +1,26 @@
+/* Widget */
+"widget.description" = "5時間と週あたりの使用率を表示します。";
+"widget.notFetched" = "未取得";
+"widget.pleaseLogin" = "アプリでログインしてください";
+"widget.5hourLimit" = "5時間の使用制限";
+"widget.weeklyLimit" = "週間の使用制限";
+"widget.reset" = "リセット時間";
+"widget.updatedAt" = "更新時刻:";
+"error.appGroupUnavailable" = "App Group が利用できません。Signing & Capabilities を確認してください。";
+"error.readFailed" = "データの読み込みに失敗しました";
+"error.decodeFailed" = "データの解析に失敗しました";
+
+/* Reset Time */
+"time.minutesLater" = "%d分後";
+"time.hoursLater" = "%@時間後";
+"time.daysLater" = "%d日後";
+
+/* Token Usage Widget (ccusage) */
+"widget.tokenUsage.today" = "今日";
+"widget.tokenUsage.thisWeek" = "今週";
+"widget.tokenUsage.thisMonth" = "今月";
+"widget.tokenUsageDescription" = "トークン使用量とコストを表示します。";
+"widget.pleaseOpenApp" = "アプリを開いてください";
+"widget.monthlyLimit" = "月間リミット";
+"widget.premiumRequests" = "プレミアムリクエスト";
+"widget.copilotBillingDescription" = "Copilotの課金使用量とコストを表示します。";

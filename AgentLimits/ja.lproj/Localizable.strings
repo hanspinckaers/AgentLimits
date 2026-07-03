@@ -1,0 +1,207 @@
+/* Window */
+"window.settings.title" = "AgentLimits 設定";
+
+/* Tabs */
+"tab.usage" = "使用制限";
+"tab.wakeUp" = "Wake Up";
+"tab.notification" = "通知";
+"tab.pacemaker" = "ペースメーカー";
+"tab.advanced" = "詳細設定";
+
+/* Pacemaker */
+"pacemaker.description" = "ペースメーカーの表示、閾値、色を設定します。";
+
+/* Menu */
+"menu.openSettings" = "AgentLimits 設定...";
+"settings.showMenuDashboard" = "メニューにダッシュボードを表示";
+"menu.dashboard.remaining5h" = "🕔%@";
+"menu.dashboard.remainingHours" = "%.1f時間後";
+"menu.dashboard.remainingMinutes" = "%d分後";
+"menu.dashboard.weeklyReset" = "📅%@";
+"menu.dashboard.resetDaysLater" = "%.1f日後";
+"menu.dashboard.resetHoursLater" = "%.1f時間後";
+"menu.dashboard.resetMinutesLater" = "%d分後";
+"menu.dashboard.soon" = "まもなく";
+"menu.displayMode" = "表示モード";
+"menu.displayMode.used" = "使用率";
+"menu.displayMode.remaining" = "残り使用率";
+"menu.showPacemakerValue" = "ペースメーカーインジケーターを表示";
+"pacemaker.showRingWarningSegment" = "リングの警告色分けを表示";
+"menu.about" = "AgentLimitsについて";
+"menu.quit" = "終了";
+"menu.language" = "言語";
+"menu.language.system" = "システム";
+
+/* ContentView */
+"content.login" = "ログインして現在の使用率を取得";
+"content.usageLimit" = "使用制限";
+"content.autoRefresh" = "ログイン済みのサービスは%d分ごとに自動更新されます。";
+"refreshInterval.label" = "更新間隔";
+"refreshInterval.minutesFormat" = "%d分";
+"content.refreshNow" = "今すぐ更新";
+"content.clearData" = "データを削除";
+"content.clearDataConfirmTitle" = "データ削除";
+"content.clearDataConfirmMessage" = "内部ブラウザのログイン情報とサイトデータを削除します。";
+"content.clearDataConfirmAction" = "削除する";
+"content.clearDataCancel" = "キャンセル";
+"content.provider" = "サービス";
+"content.usageSummary" = "ステータス";
+"content.5hours" = "5時間";
+"content.week" = "週";
+"usage.updated" = "更新: ";
+"content.notFetched" = "未取得です。下部でログインしてください。";
+"content.reset" = "リセット:";
+"content.popupClose" = "閉じる";
+"settings.showInMenuBar" = "メニューバーに表示";
+
+/* Display Mode */
+"displayMode.used" = "使用率";
+"displayMode.remaining" = "残り使用率";
+"displayMode.usedWithPacemaker" = "使用率 + ペースメーカー";
+
+/* Status */
+"status.notFetched" = "未取得";
+"status.loadingLogin" = "ログイン画面を読み込み中です";
+"status.updated" = "更新しました";
+
+/* Errors */
+"error.fetchFailed" = "取得に失敗しました: %@";
+"error.parseFailed" = "取得結果の解析に失敗しました。";
+"error.loginNotLoaded" = "ログイン画面の読み込みが完了していません。";
+"error.missingOrg" = "組織IDを取得できませんでした。利用状況ページを開き直してください。";
+"error.appGroupUnavailable" = "App Group が利用できません。Signing & Capabilities を確認してください。";
+"error.readFailed" = "データの読み込みに失敗しました";
+"error.decodeFailed" = "データの解析に失敗しました";
+
+/* Relative Time */
+"time.minutesLater" = "%d分後";
+"time.hoursLater" = "%d時間後";
+"time.daysLater" = "%d日後";
+
+/* Wake Up */
+"menu.wakeUp" = "Wake up";
+"menu.wakeUpNow" = "を今すぐ起動";
+"wakeUp.title" = "Wake up スケジュール";
+"wakeUp.description" = "指定した時刻にCLIを呼び出して5時間セッションを開始します";
+"wakeUp.provider" = "サービス";
+"wakeUp.schedule" = "スケジュール";
+"wakeUp.enabled" = "スケジュールを有効にする";
+"wakeUp.selectHours" = "実行する時刻を選択（複数可）";
+"wakeUp.selectedHours" = "選択中:";
+"wakeUp.noHoursSelected" = "なし";
+"wakeUp.hoursSelected" = "時間選択中";
+"wakeUp.testNow" = "今すぐテスト実行";
+"wakeUp.command" = "実行コマンド";
+"wakeUp.additionalArgs" = "追加引数";
+"wakeUp.additionalArgsPlaceholder" = "例: --model=\"<<model-name>>\"";
+"wakeUp.status" = "ステータス";
+"wakeUp.notScheduled" = "スケジュールなし";
+"wakeUp.lastResult" = "最終結果:";
+"wakeUp.success" = "成功";
+"wakeUp.startAtLogin" = "ログイン時にアプリを起動";
+
+/* Login Item */
+"loginItem.requiresApproval" = "システム設定で許可が必要です";
+"loginItem.notFound" = "ログイン項目が見つかりません";
+
+/* Threshold Notification */
+"notification.title" = "使用率閾値通知";
+"notification.description" = "通知の閾値と使用率の色を設定します";
+"notification.provider" = "サービス";
+"notification.colors" = "色設定";
+"notification.authorization" = "通知権限が必要です";
+"notification.requestAuth" = "権限をリクエスト";
+"notification.primaryWindow" = "5時間の使用制限";
+"notification.secondaryWindow" = "週間の使用制限";
+"notification.enabled" = "閾値通知を有効にする";
+"notification.warning" = "警告域";
+"notification.danger" = "危険域";
+"notification.resetDefaults" = "デフォルトに戻す";
+"notification.alertTitleWarning" = "%@ 使用率 警告域";
+"notification.alertTitleDanger" = "%@ 使用率 危険域";
+"notification.alertBody5h" = "5時間の使用制限の%d%%に達しました";
+"notification.alertBodyWeek" = "週間の使用制限の%d%%に達しました";
+"notification.alertBodyMonth" = "月間の使用制限の%d%%に達しました";
+"notification.monthlyWindow" = "月間の使用制限";
+
+/* ccusage */
+"tab.ccusage" = "ccusage";
+"ccusage.title" = "トークン使用量の取得(ccusage)";
+"ccusage.description" = "ccusage CLIを使用してトークン使用量とコストを取得します";
+"ccusage.settings" = "設定";
+"ccusage.enabled" = "定期取得を有効にする";
+"ccusage.command" = "実行コマンド";
+"ccusage.additionalArgs" = "追加引数";
+"ccusage.additionalArgsPlaceholder" = "例: --timezone <<timezone>>";
+"ccusage.testNow" = "今すぐテスト実行";
+"ccusage.status" = "ステータス";
+"ccusage.lastResult" = "最終結果:";
+"tokenUsage.notFetched" = "未取得";
+"tokenUsage.updated" = "更新: ";
+"ccusage.provider" = "サービス";
+"ccusage.disabled" = "無効";
+"ccusage.credits.title" = "謝辞";
+"ccusage.credits.body" = "ccusage の作者 ryoppippi さんへの感謝を込めて。";
+"ccusage.credits.site" = "ccusage 公式サイト";
+"ccusage.credits.repo" = "GitHub: ryoppippi/ccusage";
+"ccusage.copilot.autoFetchNote" = "Copilotの使用量取得時に自動的に取得されます。";
+
+/* Advanced Settings */
+"advancedSettings.title" = "詳細設定";
+"advancedSettings.description" = "CLI コマンドとスクリプト、ウィジェットの動作を設定します。";
+"cliPaths.sectionTitle" = "CLI コマンドのフルパス";
+"cliPaths.codex" = "codex パス";
+"cliPaths.claude" = "claude パス";
+"cliPaths.npx" = "npx パス";
+"cliPaths.codex.placeholder" = "例: /opt/homebrew/bin/codex";
+"cliPaths.claude.placeholder" = "例: /opt/homebrew/bin/claude";
+"cliPaths.npx.placeholder" = "例: /opt/homebrew/bin/npx";
+"cliPaths.note" = "変更内容は次回のCLI実行から反映されます。";
+"cliPaths.resolvedLabel" = "解決結果:";
+"cliPaths.notFound" = "見つかりません";
+
+/* CLI Colors */
+"cliColors.donut" = "ドーナツグラフ";
+"cliColors.donutUseStatus" = "使用率に従って色を変える";
+"cliColors.green" = "使用率（正常域）";
+"cliColors.orange" = "使用率（警告域）";
+"cliColors.red" = "使用率（危険域）";
+"cliColors.reset" = "デフォルトに戻す";
+
+/* Pacemaker Colors */
+"cliColors.pacemaker" = "色設定";
+"cliColors.pacemakerRing" = "ドーナツグラフ";
+"cliColors.pacemakerOrange" = "ペース超過（警告域）";
+"cliColors.pacemakerRed" = "ペース超過（危険域）";
+
+/* Scripts */
+"scripts.title" = "同梱スクリプト";
+"scripts.claudeCode.title" = "Claude Code ステータスライン用スクリプト";
+"scripts.claudeCode.note" = "Claude Code のステータスライン機能で使用率を表示するためのスクリプトです。";
+"scripts.copy" = "パスをコピー";
+"scripts.copied" = "コピーしました";
+"scripts.notFound" = "スクリプトがバンドルに見つかりません";
+
+/* Widget Tap Action */
+"widgetTapAction.title" = "ウィジェットタップ時の動作";
+"widgetTapAction.openWebsite" = "Webサイトを開く";
+"widgetTapAction.refreshData" = "データを再取得";
+"widgetTapAction.note" = "ウィジェットをタップしたときの動作を選択します";
+
+/* Pacemaker Mode Thresholds */
+"notification.pacemakerThresholds" = "ペースメーカー閾値";
+"notification.pacemakerThresholds.description" = "ペース超過時の警告・危険域の閾値を設定します（相対%）";
+"notification.pacemakerThresholds.warning" = "警告域";
+"notification.pacemakerThresholds.danger" = "危険域";
+"content.month" = "月間";
+
+/* アップデート */
+"menu.checkForUpdates" = "アップデートを確認...";
+"tab.update" = "アップデート";
+"update.currentVersion" = "現在のバージョン";
+"update.lastChecked" = "最終チェック";
+"update.checkNow" = "今すぐ確認";
+"update.automaticChecks" = "自動でアップデートを確認する";
+"update.releasesPage" = "すべてのリリースを表示";
+"update.neverChecked" = "未確認";
+"settings.providerOrder" = "表示順";
