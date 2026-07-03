@@ -84,6 +84,7 @@ struct MenuBarPercentLineView: View {
             }
         }
         .monospacedDigit()
+        .offset(y: 1.5)
     }
 
     @ViewBuilder
