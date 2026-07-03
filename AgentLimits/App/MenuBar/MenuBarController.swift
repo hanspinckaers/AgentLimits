@@ -90,10 +90,12 @@ final class MenuBarController: NSObject {
         let renderer = ImageRenderer(content: content.fixedSize())
         renderer.scale = NSScreen.main?.backingScaleFactor ?? 2
         if let image = renderer.nsImage {
-            image.isTemplate = false
+            image.isTemplate = true
             statusItem.button?.image = image
         } else {
-            statusItem.button?.image = NSImage(resource: .menuBarIcon)
+            let image = NSImage(resource: .menuBarIcon)
+            image.isTemplate = true
+            statusItem.button?.image = image
         }
     }
 
