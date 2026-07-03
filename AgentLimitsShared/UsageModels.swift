@@ -385,12 +385,12 @@ enum UsageSpendFormatter {
 
         let daysLeft = max(secondsLeft / 86_400, 1)
         let amountPerDay = max(0, remaining) / daysLeft
-        let dayText = "~\(formatSpendAmount(amountPerDay, symbol: window.spendCurrencySymbol, compact: compact))/d"
+        let dayText = "~\(formatDailyAmount(amountPerDay, symbol: window.spendCurrencySymbol))/d"
         let workdayText: String
         if let workdaysLeft = remainingWeekdays(from: now, to: resetAt),
            workdaysLeft > 0 {
             let amountPerWorkday = max(0, remaining) / workdaysLeft
-            workdayText = " (~\(formatSpendAmount(amountPerWorkday, symbol: window.spendCurrencySymbol, compact: compact))/wd)"
+            workdayText = " (~\(formatDailyAmount(amountPerWorkday, symbol: window.spendCurrencySymbol))/wd)"
         } else {
             workdayText = ""
         }
@@ -432,6 +432,17 @@ enum UsageSpendFormatter {
         formatter.maximumFractionDigits = scaledAmount.rounded() == scaledAmount ? 0 : 1
         let number = formatter.string(from: NSNumber(value: scaledAmount)) ?? String(format: "%.1f", scaledAmount)
         return "\(resolvedCurrencySymbol(symbol))\(number)\(suffix)"
+    }
+
+    private static func formatDailyAmount(_ amount: Double, symbol: String?) -> String {
+        let formatter = NumberFormatter()
+        formatter.numberStyle = .decimal
+        formatter.groupingSeparator = ","
+        formatter.minimumFractionDigits = 0
+        formatter.maximumFractionDigits = 0
+        formatter.roundingMode = .halfUp
+        let number = formatter.string(from: NSNumber(value: amount)) ?? String(format: "%.0f", amount)
+        return "\(resolvedCurrencySymbol(symbol))\(number)"
     }
 
     private static func remainingWeekdays(from start: Date, to end: Date, calendar: Calendar = .current) -> Double? {
