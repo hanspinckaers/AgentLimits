@@ -1,21 +1,25 @@
 // MARK: - DashboardMenuItemView.swift
-// NSMenuItem.view に設定する 1プロバイダーぶんのダッシュボード行。
-// 上部: プロバイダー名 + 残り時間 + リセット時刻
-// 中部: ウィンドウごとの線形バー（ラベル / バー / パーセント）
+// Dashboard row for one provider, assigned to NSMenuItem.view.
+// Top: provider name, remaining time, and reset time.
+// Middle: per-window linear bars with label, bar, and value.
 
 import SwiftUI
 
-/// メニューバーダッシュボードの1プロバイダー行。NSHostingView でラップして NSMenuItem.view に設定する。
+/// One provider row in the menu bar dashboard, wrapped in NSHostingView for NSMenuItem.view.
 struct DashboardMenuItemView: View {
     let provider: UsageProvider
     let snapshot: UsageSnapshot
     let displayMode: UsageDisplayMode
 
     @State private var isHovered = false
+    @AppStorage(UserDefaultsKeys.showAbsoluteSpendAmount, store: AppGroupDefaults.shared)
+    private var showAbsoluteSpendAmount = false
+    @AppStorage(UserDefaultsKeys.showDailySpendLeft, store: AppGroupDefaults.shared)
+    private var showDailySpendLeft = false
     @Environment(\.colorScheme) private var colorScheme
 
-    // NSVisualEffectView のmaterial selectionはアクセントカラーより暗く合成されるため、
-    // ダークモード時のみHSB空間で明度を下げてネイティブに近づける
+    // NSVisualEffectView selection material composites darker than the accent color,
+    // so darken it in HSB space only in dark mode to better match native menus.
     private var menuHighlightColor: Color {
         guard colorScheme == .dark,
               let rgb = NSColor.controlAccentColor.usingColorSpace(.deviceRGB) else {
@@ -49,7 +53,7 @@ struct DashboardMenuItemView: View {
         .onHover { isHovered = $0 }
     }
 
-    // MARK: - ヘッダー行
+    // MARK: - Header Row
 
     private var headerRow: some View {
         HStack(spacing: 6) {
@@ -66,7 +70,7 @@ struct DashboardMenuItemView: View {
         .font(.system(size: 11))
     }
 
-    // MARK: - ウィンドウ行
+    // MARK: - Window Rows
 
     @ViewBuilder
     private var windowRows: some View {
@@ -98,15 +102,65 @@ struct DashboardMenuItemView: View {
                 displayMode: displayMode
             )
 
-            Text(UsagePercentFormatter.formatPercentText(
-                displayMode.displayPercent(from: window.usedPercent, window: window)
-            ))
-            .font(.system(size: 11))
-            .frame(width: 38, alignment: .trailing)
+            windowValueView(window)
         }
     }
 
-    // MARK: - 時間テキスト
+    @ViewBuilder
+    private func windowValueView(_ window: UsageWindow) -> some View {
+        let spendParts = spendParts(for: window)
+        if spendParts.absolute != nil || spendParts.daily != nil {
+            VStack(alignment: .trailing, spacing: -1) {
+                if let absolute = spendParts.absolute {
+                    Text(absolute)
+                        .font(.system(size: 10.5))
+                }
+                if let daily = spendParts.daily {
+                    Text(daily)
+                        .font(.system(size: 9.5))
+                }
+            }
+            .lineLimit(1)
+            .minimumScaleFactor(0.75)
+            .frame(width: spendTextWidth(for: window), alignment: .trailing)
+        } else {
+            Text(percentText(for: window))
+                .font(.system(size: 11))
+                .lineLimit(1)
+                .minimumScaleFactor(0.75)
+                .frame(width: spendTextWidth(for: window), alignment: .trailing)
+        }
+    }
+
+    private func spendParts(for window: UsageWindow) -> (absolute: String?, daily: String?) {
+        UsageSpendFormatter.formatEnabledSpendParts(
+            for: window,
+            displayMode: displayMode.makeDisplayModeRaw(),
+            showAbsoluteAmount: showAbsoluteSpendAmount,
+            showDailySpendLeft: showDailySpendLeft,
+            compact: true
+        )
+    }
+
+    private func percentText(for window: UsageWindow) -> String {
+        return UsagePercentFormatter.formatPercentText(
+            displayMode.displayPercent(from: window.usedPercent, window: window)
+        )
+    }
+
+    private func showSpendDetails(for window: UsageWindow) -> Bool {
+        (showAbsoluteSpendAmount || showDailySpendLeft) && window.spendLimitAmount != nil
+    }
+
+    private func spendTextWidth(for window: UsageWindow) -> CGFloat {
+        guard showSpendDetails(for: window) else { return 38 }
+        if showAbsoluteSpendAmount && showDailySpendLeft {
+            return 112
+        }
+        return showAbsoluteSpendAmount ? 86 : 112
+    }
+
+    // MARK: - Time Text
 
     private var primaryRemainingText: String {
         guard let window = snapshot.primaryWindow, let resetAt = window.resetAt else { return "--" }

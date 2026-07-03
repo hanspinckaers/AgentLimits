@@ -238,7 +238,7 @@ final class ThresholdNotificationManager: ObservableObject {
     ) async {
         let content = UNMutableNotificationContent()
 
-        // Title: "Codex 使用量警告" or "Claude Code 使用量警告"
+        // Title: "Codex usage warning" or "Claude Code usage warning"
         let titleKey = level == .warning
             ? "notification.alertTitleWarning"
             : "notification.alertTitleDanger"

@@ -5,7 +5,6 @@
 #
 # Usage:
 #   ./agentlimits_statusline_claude.sh           # Sync with app settings
-#   ./agentlimits_statusline_claude.sh -ja       # Force Japanese
 #   ./agentlimits_statusline_claude.sh -en       # Force English
 #   ./agentlimits_statusline_claude.sh -r        # Force remaining mode
 #   ./agentlimits_statusline_claude.sh -u        # Force used mode
@@ -137,15 +136,9 @@ get_pacemaker_status_level() {
     fi
 }
 
-# Get system language
+# The status line is English-only.
 get_system_language() {
-    local sys_lang
-    sys_lang=$(defaults read -g AppleLanguages 2>/dev/null | tr -d '[:space:]' | sed 's/[()]//g' | cut -d',' -f1 | sed 's/"//g')
-    if [[ "$sys_lang" == ja* ]]; then
-        echo "ja"
-    else
-        echo "en"
-    fi
+    echo "en"
 }
 
 # Read settings from App Group
@@ -153,9 +146,7 @@ APP_DISPLAY_MODE=$(read_app_setting "usage_display_mode_cached")
 APP_LANGUAGE=$(read_app_setting "app_language")
 
 # Determine effective language
-if [[ "$APP_LANGUAGE" == "ja" ]]; then
-    LANG_CODE="ja"
-elif [[ "$APP_LANGUAGE" == "en" ]]; then
+if [[ "$APP_LANGUAGE" == "en" ]]; then
     LANG_CODE="en"
 else
     # System setting or not set
@@ -173,10 +164,6 @@ DISPLAY_MODE_OVERRIDE=""
 # Parse arguments (override app settings)
 while [[ $# -gt 0 ]]; do
     case "$1" in
-        -ja)
-            LANG_CODE="ja"
-            shift
-            ;;
         -en)
             LANG_CODE="en"
             shift
@@ -212,20 +199,12 @@ debug_log "app_language=${APP_LANGUAGE:-unset}"
 debug_log "lang_code=${LANG_CODE}"
 debug_log "display_mode_override=${DISPLAY_MODE_OVERRIDE:-none}"
 
-# Localized strings
-if [[ "$LANG_CODE" == "ja" ]]; then
-    L_RESET="リセット時間"
-    L_UPDATED="更新:"
-    L_ERROR_NO_FILE="エラー: スナップショットファイルが見つかりません"
-    L_ERROR_NO_JQ="エラー: jqがインストールされていません"
-    L_ERROR_PARSE="エラー: JSONのパースに失敗しました"
-else
-    L_RESET="Resets at"
-    L_UPDATED="updated:"
-    L_ERROR_NO_FILE="Error: Snapshot file not found"
-    L_ERROR_NO_JQ="Error: jq is not installed"
-    L_ERROR_PARSE="Error: Failed to parse JSON"
-fi
+# Output strings
+L_RESET="Resets at"
+L_UPDATED="updated:"
+L_ERROR_NO_FILE="Error: Snapshot file not found"
+L_ERROR_NO_JQ="Error: jq is not installed"
+L_ERROR_PARSE="Error: Failed to parse JSON"
 
 # Check if jq is installed
 if ! command -v jq &> /dev/null; then

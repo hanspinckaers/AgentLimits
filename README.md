@@ -2,6 +2,12 @@
 
 **In Development**
 
+## Added in This Fork
+- Claude Enterprise monthly spend limits are parsed from text such as `$383.40 of $1,000.00 spent`, including reset date and used percentage.
+- Monthly limits can be shown in the menu bar as compact spend text, with optional daily and workday remaining spend.
+- Menu bar status text uses native macOS template coloring so active and inactive displays use the correct system tint.
+- Comments translated to English.
+
 AgentLimits is a macOS Sonoma+ menu bar app with Notification Center widgets. It shows usage limits for ChatGPT Codex / Claude Code (5-hour + weekly, or monthly when the provider returns a monthly window), GitHub Copilot (monthly premium requests), and ccusage token usage.
 
 ![](./images/agentlimit_sample.png)
@@ -48,7 +54,7 @@ When you open the menu bar menu, a dashboard appears at the top showing per-prov
 - **Pacemaker bar**: divided into time segments (5h: 5 segments, weekly: 7 segments, monthly: single continuous bar) with gaps, matching the widget inner ring
 - Clicking a dashboard row opens the provider's usage page in the browser
 - Dashboard visibility is configurable per provider in **Usage** settings (**Show dashboard in menu**)
-- Menu also includes: **Display Mode**, **Language** (System/Japanese/English), **Wake Up → Run Now**, **Start app at login**, and **Check for Updates...**
+- Menu also includes: **Display Mode**, **Language**, **Wake Up → Run Now**, **Start app at login**, and **Check for Updates...**
 
 ![](./images/agentlimits_menu.png)
 
@@ -155,7 +161,7 @@ Pacemaker shows a time-based usage benchmark to help you stay on track.
 - Bundled script for Claude Code status line integration (path shown in **Advanced → Bundled Scripts**)
 - Reads Claude Code usage snapshot + App Group settings (display mode, language, thresholds, colors)
 - Outputs a single line with 5-hour/weekly usage, reset times, and update time
-- Options: `-ja`, `-en`, `-r` (remaining), `-u` (used), `-p` (pacemaker), `-i` (usage + pacemaker inline), `-d` (debug)
+- Options: `-en`, `-r` (remaining), `-u` (used), `-p` (pacemaker), `-i` (usage + pacemaker inline), `-d` (debug)
 - Requires `jq` (`brew install jq`)
 
 ## Advanced: Storage (App Group)

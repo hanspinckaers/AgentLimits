@@ -1,12 +1,12 @@
 // MARK: - AppUsageColorResolver.swift
-// アプリターゲット用の使用率カラーリゾルバー。
-// AgentLimitsWidget の WidgetUsageColorResolver と同等のロジックをアプリ側でも使えるように提供する。
+// Usage color resolver for the app target.
+// Mirrors AgentLimitsWidget's WidgetUsageColorResolver logic for app-side rendering.
 
 import SwiftUI
 
-/// 使用率に応じたメニュー側の色を解決するユーティリティ。
+/// Utility for resolving menu colors from usage.
 enum AppUsageColorResolver {
-    /// 使用率テキスト用のステータス色（緑/オレンジ/赤）を返す。
+    /// Returns the status color for usage text: green, orange, or red.
     static func statusColor(
         for window: UsageWindow?,
         provider: UsageProvider,
@@ -23,7 +23,8 @@ enum AppUsageColorResolver {
         return statusColor(for: level)
     }
 
-    /// バーのメインカラー判定（ウィジェット同等）。`donutUseStatus` が ON のときのみ閾値超過レベルを返す。
+    /// Resolves the main bar color level, matching widgets.
+    /// Returns threshold level only when `donutUseStatus` is enabled.
     static func barLevel(
         usedPercent: Double?,
         provider: UsageProvider,
@@ -41,7 +42,7 @@ enum AppUsageColorResolver {
         )
     }
 
-    /// 使用率バーのメインカラー（ドーナツリングの外輪と同じ規則）。
+    /// Main usage bar color, following the same rules as the donut outer ring.
     static func barColor(
         usedPercent: Double?,
         provider: UsageProvider,

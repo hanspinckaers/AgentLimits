@@ -17,14 +17,16 @@ enum UserDefaultsKeys {
     static let menuBarDashboardCopilotEnabled = "menu_bar_dashboard_copilot_enabled"
     static let menuBarShowPacemakerValue = SharedUserDefaultsKeys.menuBarShowPacemakerValue
     static let pacemakerRingWarningEnabled = SharedUserDefaultsKeys.pacemakerRingWarningEnabled
+    static let showAbsoluteSpendAmount = SharedUserDefaultsKeys.showAbsoluteSpendAmount
+    static let showDailySpendLeft = SharedUserDefaultsKeys.showDailySpendLeft
     static let providerDisplayOrder = "provider_display_order"
     static let menuBarIconHidden = "menu_bar_icon_hidden"
 }
 
-/// プロバイダ表示順の読み書きを担当する
+/// Handles reading and writing provider display order.
 enum ProviderOrderStore {
-    /// UserDefaults から表示順を読み込む。未設定の場合は allCases 順を返す。
-    /// 将来プロバイダが増えた場合、保存済みリストにない分を末尾に追加する。
+    /// Loads display order from UserDefaults. Defaults to allCases order.
+    /// If providers are added later, any missing providers are appended.
     static func loadProviderOrder() -> [UsageProvider] {
         guard let rawValues = UserDefaults.standard.stringArray(
             forKey: UserDefaultsKeys.providerDisplayOrder
@@ -36,7 +38,7 @@ enum ProviderOrderStore {
         return stored + missing
     }
 
-    /// 表示順を UserDefaults に保存する。
+    /// Saves display order to UserDefaults.
     static func saveProviderOrder(_ providers: [UsageProvider]) {
         UserDefaults.standard.set(
             providers.map(\.rawValue),
@@ -53,10 +55,10 @@ enum UsageDisplayMode: String, Codable, CaseIterable, Identifiable {
 
     var id: String { rawValue }
 
-    /// メニューに表示する表示モード。ペースメーカーは常時補助表示のため選択肢から除外する。
+    /// Display modes shown in the menu. Pacemaker is excluded because it is an auxiliary display.
     static let selectableCases: [UsageDisplayMode] = [.used, .remaining]
 
-    /// 保存済みの旧ペースメーカーモードを現在の使用率モードへ正規化する。
+    /// Normalizes the legacy saved pacemaker mode to the current used mode.
     var normalizedSelectableMode: UsageDisplayMode {
         switch self {
         case .usedWithPacemaker:
@@ -66,7 +68,7 @@ enum UsageDisplayMode: String, Codable, CaseIterable, Identifiable {
         }
     }
 
-    /// 保存文字列から現在選択可能な表示モードを復元する。
+    /// Restores a currently selectable display mode from a saved string.
     static func makeSelectableMode(from rawValue: String?) -> UsageDisplayMode {
         guard let rawValue, let displayMode = UsageDisplayMode(rawValue: rawValue) else {
             return .used

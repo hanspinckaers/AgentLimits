@@ -12,6 +12,10 @@ struct ClaudeUsageResponse: Codable {
     struct Window: Codable {
         let utilization: Double?
         let resets_at: String?
+        let spend_amount: Double?
+        let spend_limit_amount: Double?
+        let spend_currency_symbol: String?
+        let spend_currency_code: String?
     }
 
     let five_hour: Window?
@@ -21,6 +25,7 @@ struct ClaudeUsageResponse: Codable {
     let seven_day_sonnet: Window?
     let iguana_necktie: Window?
     let extra_usage: Window?
+    let enterprise_monthly: Window?
 }
 
 extension ClaudeUsageResponse {
@@ -42,6 +47,18 @@ extension ClaudeUsageResponse {
             limitSeconds: UsageLimitDuration.sevenDays,
             parseResetDate: parseResetDate
         )
+
+        if primary == nil,
+           secondary == nil,
+           let monthly = makeMonthlyWindow(source: enterprise_monthly, parseResetDate: parseResetDate) {
+            return UsageSnapshot(
+                provider: .claudeCode,
+                fetchedAt: fetchedAt,
+                primaryWindow: monthly,
+                secondaryWindow: nil
+            )
+        }
+
         return UsageSnapshot(
             provider: .claudeCode,
             fetchedAt: fetchedAt,
@@ -59,7 +76,7 @@ extension ClaudeUsageResponse {
         guard let source, let usedPercent = source.utilization else {
             return nil
         }
-        // resets_at が null の場合は初期状態として扱い、UsageWindow を作らない
+        // Treat null resets_at as an initial state and do not create a UsageWindow.
         guard let resetAtString = source.resets_at,
               let resetAt = parseResetDate(resetAtString) else {
             return nil
@@ -70,6 +87,39 @@ extension ClaudeUsageResponse {
             resetAt: resetAt,
             limitWindowSeconds: limitSeconds
         )
+    }
+
+    private func makeMonthlyWindow(
+        source: Window?,
+        parseResetDate: (String) -> Date?
+    ) -> UsageWindow? {
+        guard let source, let usedPercent = source.utilization else {
+            return nil
+        }
+        guard let resetAtString = source.resets_at,
+              let resetAt = parseResetDate(resetAtString) else {
+            return nil
+        }
+        return UsageWindow(
+            kind: .primary,
+            usedPercent: usedPercent,
+            resetAt: resetAt,
+            limitWindowSeconds: Self.computeMonthlyLimitWindowSeconds(resetAt: resetAt),
+            spendAmount: source.spend_amount,
+            spendLimitAmount: source.spend_limit_amount,
+            spendCurrencySymbol: source.spend_currency_symbol,
+            spendCurrencyCode: source.spend_currency_code
+        )
+    }
+
+    private static func computeMonthlyLimitWindowSeconds(resetAt: Date) -> TimeInterval {
+        var calendar = Calendar(identifier: .gregorian)
+        calendar.timeZone = TimeZone(secondsFromGMT: 0) ?? .current
+        guard let windowStart = calendar.date(byAdding: .month, value: -1, to: resetAt) else {
+            return UsageLimitDuration.thirtyDays
+        }
+        let duration = resetAt.timeIntervalSince(windowStart)
+        return duration > UsageLimitDuration.sevenDays ? duration : UsageLimitDuration.thirtyDays
     }
 }
 
@@ -119,7 +169,11 @@ final class ClaudeUsageFetcher {
         } catch {
             throw ClaudeUsageFetcherError.invalidResponse
         }
-        return response.toSnapshot(fetchedAt: Date(), parseResetDate: parseResetDate)
+        let snapshot = response.toSnapshot(fetchedAt: Date(), parseResetDate: parseResetDate)
+        guard snapshot.primaryWindow != nil || snapshot.secondaryWindow != nil else {
+            throw ClaudeUsageFetcherError.invalidResponse
+        }
+        return snapshot
     }
 
     /// Checks if user is logged in by verifying the session cookie
@@ -235,10 +289,146 @@ final class ClaudeUsageFetcher {
           return match ? match[1] : null;
         }
 
+        function parseSpendPercent(text) {
+          const usedMatch = text.match(/([0-9]{1,3}(?:\\.[0-9]+)?)\\s*%\\s*used/i);
+          if (usedMatch) {
+            return Number(usedMatch[1]);
+          }
+
+          const spendMatch = text.match(/[^0-9\\n]*([0-9][0-9,]*(?:\\.[0-9]+)?)\\s+of\\s+[^0-9\\n]*([0-9][0-9,]*(?:\\.[0-9]+)?)\\s+spent/i);
+          if (!spendMatch) { return null; }
+
+          const spent = Number(spendMatch[1].replace(/,/g, ""));
+          const limit = Number(spendMatch[2].replace(/,/g, ""));
+          if (!Number.isFinite(spent) || !Number.isFinite(limit) || limit <= 0) {
+            return null;
+          }
+          return (spent / limit) * 100;
+        }
+
+        function parseSpendAmounts(text) {
+          const spendMatch = text.match(/([^0-9\\s\\n]*)\\s*([0-9][0-9,]*(?:\\.[0-9]+)?)\\s+of\\s+([^0-9\\s\\n]*)\\s*([0-9][0-9,]*(?:\\.[0-9]+)?)\\s+spent/i);
+          if (!spendMatch) { return null; }
+
+          const spent = Number(spendMatch[2].replace(/,/g, ""));
+          const limit = Number(spendMatch[4].replace(/,/g, ""));
+          if (!Number.isFinite(spent) || !Number.isFinite(limit) || limit <= 0) {
+            return null;
+          }
+
+          return {
+            spend_amount: spent,
+            spend_limit_amount: limit,
+            spend_currency_symbol: spendMatch[1] || spendMatch[3] || "$"
+          };
+        }
+
+        function parseEnterpriseSpendWindow() {
+          const rawText = document.body ? document.body.innerText : "";
+          const text = rawText.replace(/\\u00a0/g, " ");
+          if (!text) { return null; }
+
+          const utilization = parseSpendPercent(text);
+          if (!Number.isFinite(utilization)) { return null; }
+          const months = {
+            jan: 0, january: 0,
+            feb: 1, february: 1,
+            mar: 2, march: 2,
+            apr: 3, april: 3,
+            may: 4,
+            jun: 5, june: 5,
+            jul: 6, july: 6,
+            aug: 7, august: 7,
+            sep: 8, sept: 8, september: 8,
+            oct: 9, october: 9,
+            nov: 10, november: 10,
+            dec: 11, december: 11
+          };
+
+          const dateMatch = text.match(/Resets?\\s+(?:[A-Za-z]{3,9},\\s*)?([A-Za-z]{3,9})\\s+(\\d{1,2})(?:,\\s*(\\d{4}))?\\s+at\\s+(\\d{1,2}):(\\d{2})\\s*(AM|PM)?\\s*(?:GMT|UTC)?\\s*([+-]\\d{1,2})(?::?(\\d{2}))?/i);
+          if (!dateMatch) { return null; }
+
+          const month = months[dateMatch[1].toLowerCase()];
+          if (month === undefined) { return null; }
+
+          const day = Number(dateMatch[2]);
+          const explicitYear = dateMatch[3] ? Number(dateMatch[3]) : null;
+          let hour = Number(dateMatch[4]);
+          const minute = Number(dateMatch[5]);
+          const meridiem = dateMatch[6] ? dateMatch[6].toUpperCase() : null;
+          if (meridiem === "AM" && hour === 12) {
+            hour = 0;
+          } else if (meridiem === "PM" && hour < 12) {
+            hour += 12;
+          }
+
+          const offsetHour = Number(dateMatch[7]);
+          const offsetMinute = dateMatch[8] ? Number(dateMatch[8]) : 0;
+          if (!Number.isFinite(day) || !Number.isFinite(hour) || !Number.isFinite(minute) || !Number.isFinite(offsetHour) || !Number.isFinite(offsetMinute)) {
+            return null;
+          }
+
+          const offsetSign = offsetHour < 0 ? -1 : 1;
+          const offsetMinutes = offsetSign * ((Math.abs(offsetHour) * 60) + offsetMinute);
+          const now = new Date();
+          const makeDate = (year) => new Date(Date.UTC(year, month, day, hour, minute) - (offsetMinutes * 60 * 1000));
+          let resetAt = makeDate(explicitYear || now.getFullYear());
+          if (!explicitYear && resetAt.getTime() < now.getTime() - (24 * 60 * 60 * 1000)) {
+            resetAt = makeDate(now.getFullYear() + 1);
+          }
+          if (Number.isNaN(resetAt.getTime())) { return null; }
+
+          const amounts = parseSpendAmounts(text) || {};
+          return {
+            utilization: Math.max(0, Math.min(100, utilization)),
+            resets_at: resetAt.toISOString(),
+            ...amounts
+          };
+        }
+
+        function hasUsableUsageWindow(data) {
+          const primary = data && data.five_hour;
+          const secondary = data && data.seven_day;
+          return Boolean(
+            (primary && primary.utilization != null && primary.resets_at)
+              || (secondary && secondary.utilization != null && secondary.resets_at)
+          );
+        }
+
+        function delay(ms) {
+          return new Promise(resolve => setTimeout(resolve, ms));
+        }
+
+        async function waitForEnterpriseSpendWindow() {
+          const startedAt = Date.now();
+          while (Date.now() - startedAt < 4000) {
+            const enterpriseWindow = parseEnterpriseSpendWindow();
+            if (enterpriseWindow) {
+              return enterpriseWindow;
+            }
+            await delay(250);
+          }
+          return parseEnterpriseSpendWindow();
+        }
+
+        async function addEnterpriseSpendWindow(data, shouldWait) {
+          const enterpriseWindow = shouldWait
+            ? await waitForEnterpriseSpendWindow()
+            : parseEnterpriseSpendWindow();
+          if (enterpriseWindow) {
+            data.enterprise_monthly = enterpriseWindow;
+          }
+          return data;
+        }
+
         const orgId = readCookieValue("lastActiveOrg")
           || findOrgIdFromResources()
           || findOrgIdFromHtml();
         if (!orgId) {
+          const data = await addEnterpriseSpendWindow({}, true);
+          if (data.enterprise_monthly) {
+            return JSON.stringify(data);
+          }
           throw new Error("Missing organization id");
         }
 
@@ -250,9 +440,14 @@ final class ClaudeUsageFetcher {
           }
         });
         if (!response.ok) {
+          const data = await addEnterpriseSpendWindow({}, true);
+          if (data.enterprise_monthly) {
+            return JSON.stringify(data);
+          }
           throw new Error("HTTP " + response.status);
         }
         const data = await response.json();
+        await addEnterpriseSpendWindow(data, !hasUsableUsageWindow(data));
         return JSON.stringify(data);
       } catch (error) {
         const message = error && error.message ? error.message : String(error);

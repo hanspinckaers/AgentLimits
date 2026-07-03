@@ -63,11 +63,11 @@ private enum DeepLinkHandler {
 /// App delegate for handling deep links and configuring app as accessory (menu bar only)
 final class AppDelegate: NSObject, NSApplicationDelegate {
     private var menuBarController: MenuBarController?
-    /// 起動完了時刻。起動直後の reopen 誤発火を無視するために使用する。
+    /// Launch completion time, used to ignore spurious reopen events immediately after launch.
     private var launchedAt: Date?
 
     func applicationWillFinishLaunching(_ notification: Notification) {
-        // できるだけ早く accessory に設定し、Dock アイコンを表示しない。
+        // Switch to accessory mode as early as possible so no Dock icon appears.
         NSApp.setActivationPolicy(.accessory)
     }
 
@@ -75,7 +75,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         launchedAt = Date()
         menuBarController = MenuBarController(appState: AppSharedState.shared)
 
-        // 設定ウィンドウクローズ時にメニューバーアイコンの一時復活を終了する
+        // End temporary menu bar icon visibility when the settings window closes.
         AppSharedState.shared.onSettingsWindowClosed = { [weak self] in
             self?.menuBarController?.endTemporaryRevealIfNeeded()
         }
@@ -85,10 +85,10 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         return false
     }
 
-    /// 起動済みアプリを再度開いたときに呼ばれる。
-    /// アイコン非表示中は一時復活させ、設定ウィンドウを開く。
+    /// Called when opening an already running app.
+    /// Temporarily reveals the icon while hidden and opens Settings.
     func applicationShouldHandleReopen(_ sender: NSApplication, hasVisibleWindows flag: Bool) -> Bool {
-        // 起動完了から 2 秒以内の reopen は LaunchServices 由来の可能性があるため無視する
+        // Ignore reopen events within two seconds of launch; these can come from LaunchServices.
         if let launchedAt, Date().timeIntervalSince(launchedAt) < 2.0 {
             return true
         }

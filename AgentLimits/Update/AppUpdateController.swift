@@ -1,11 +1,11 @@
 // MARK: - AppUpdateController.swift
-// Sparkle アップデータのシングルトンラッパー。
-// 起動時/24時間ごとの自動チェックは Info.plist の設定に従い Sparkle が自動実行する。
+// Singleton wrapper around the Sparkle updater.
+// Sparkle handles launch and 24-hour automatic checks according to Info.plist settings.
 
 import Combine
 import Sparkle
 
-/// Sparkle の SPUStandardUpdaterController をラップし、SwiftUI へ状態を公開するコントローラ。
+/// Wraps Sparkle's SPUStandardUpdaterController and exposes state to SwiftUI.
 @MainActor
 final class AppUpdateController: ObservableObject {
 
@@ -15,13 +15,13 @@ final class AppUpdateController: ObservableObject {
 
     private let controller: SPUStandardUpdaterController
 
-    /// アップデートチェックが現在実行可能か（Sparkle KVO）
+    /// Whether update checks are currently available, mirrored from Sparkle KVO.
     @Published var canCheckForUpdates: Bool
 
-    /// 最終チェック日時（Sparkle KVO）
+    /// Last update check date, mirrored from Sparkle KVO.
     @Published var lastUpdateCheckDate: Date?
 
-    /// 起動時/定期チェックの有効フラグ
+    /// Launch and scheduled update check flag.
     @Published var automaticChecksEnabled: Bool
 
     private var cancellables = Set<AnyCancellable>()
@@ -46,12 +46,12 @@ final class AppUpdateController: ObservableObject {
             .assign(to: &$lastUpdateCheckDate)
     }
 
-    /// 手動アップデートチェックを開始する。
+    /// Starts a manual update check.
     func checkForUpdates() {
         controller.checkForUpdates(nil)
     }
 
-    /// 起動時/定期チェックの有効/無効を切り替える。
+    /// Toggles launch and scheduled update checks.
     func setAutomaticChecksEnabled(_ enabled: Bool) {
         updater.automaticallyChecksForUpdates = enabled
         automaticChecksEnabled = enabled

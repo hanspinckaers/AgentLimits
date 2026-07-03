@@ -18,7 +18,7 @@ final class AppSharedState: ObservableObject {
     let viewModel: UsageViewModel
     let tokenUsageViewModel: TokenUsageViewModel
 
-    /// 設定ウィンドウクローズ時のコールバック（AppDelegate が設定する）
+    /// Callback set by AppDelegate and invoked when the settings window closes.
     var onSettingsWindowClosed: (() -> Void)?
 
     private var isStarted = false

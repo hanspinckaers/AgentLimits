@@ -5,7 +5,7 @@
 import AppKit
 import SwiftUI
 
-/// 設定画面を必要時にだけ生成・表示する AppKit コントローラー。
+/// AppKit controller that creates and shows the settings window on demand.
 @MainActor
 final class SettingsWindowController: NSWindowController {
     static let shared = SettingsWindowController()
@@ -23,7 +23,7 @@ final class SettingsWindowController: NSWindowController {
         fatalError("init(coder:) is not supported")
     }
 
-    /// 設定ウィンドウを表示し、既に存在する場合は前面へ移動する。
+    /// Shows the settings window, bringing an existing one to the front.
     func showSettingsWindow() {
         prepareSettingsState()
 
@@ -38,7 +38,7 @@ final class SettingsWindowController: NSWindowController {
         NSApp.activate(ignoringOtherApps: true)
     }
 
-    /// ウィンドウクローズ時にメニューバーアイコンの一時復活終了を通知する
+    /// Notifies app state when the settings window closes so temporary icon visibility can end.
     private func observeWindowClose(_ window: NSWindow) {
         windowCloseObservation = NotificationCenter.default.addObserver(
             forName: NSWindow.willCloseNotification,
