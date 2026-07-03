@@ -2,8 +2,8 @@
 
 **In Development**
 
-> [!NOTE]
-> **Added in this fork**
+> [!IMPORTANT]
+> **Fork details**
 > - Claude Enterprise monthly spend limits are parsed from text such as `$383.40 of $1,000.00 spent`, including reset date and used percentage.
 > - Monthly limits can be shown in the menu bar as compact spend text, with optional daily and workday remaining spend.
 > - Menu bar status text uses native macOS template coloring so active and inactive displays use the correct system tint.
